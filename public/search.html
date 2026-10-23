@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Search — TeachWiz</title>
+  <link rel="preload" href="/fonts/manrope-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/ui.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="/" aria-label="TeachWiz home"><span class="brand-mark" aria-hidden="true">T</span>Teachwiz</a>
+    <nav class="site-nav" aria-label="Main"><a href="/search?type=tutors">Tutors</a><a href="/search?type=centers">Centers</a><a href="/search?type=courses">Courses</a><a href="/login">For centers</a></nav>
+    <div class="header-actions">
+      <div class="lang" role="group" aria-label="Language"><button type="button" aria-pressed="false">UZ</button><button type="button" aria-pressed="false">RU</button><button type="button" aria-pressed="true">EN</button></div>
+      <a class="btn login-link" href="/login">Log in</a>
+    </div>
+  </header>
+  <main class="search-page">
+    <form class="search-bar panel" action="/search" method="get" role="search">
+      <label class="field">Subject or skill<input name="q" placeholder="e.g. IELTS, Math, Python"></label>
+      <label class="field">Location<input name="location" placeholder="Tashkent, Yunusabad"></label>
+      <button class="btn btn-soft gps" type="submit" name="near" value="me">Use my GPS</button>
+      <button class="btn btn-primary" type="submit"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><span class="submit-label">Search</span></button>
+    </form>
+    <div class="search-chips" role="group" aria-label="Quick filters">
+      <button class="chip" type="button" aria-pressed="true">Filters (3)</button><button class="chip" type="button" aria-pressed="false">Price</button><button class="chip" type="button" aria-pressed="false">4.5+ ★</button><button class="chip" type="button" aria-pressed="false">Language</button><button class="chip" type="button" aria-pressed="false">Online</button>
+    </div>
+    <div class="search-layout">
+      <aside class="filters panel" aria-label="Filters">
+        <div class="filter-group"><h2>Price per month (UZS)</h2><div class="range" aria-hidden="true"><span></span></div><div class="muted">150 000 – 1 200 000</div></div>
+        <fieldset class="filter-group"><legend>Minimum rating</legend><button class="chip" type="button" aria-pressed="true">4.5+</button><button class="chip" type="button" aria-pressed="false">4.0+</button></fieldset>
+        <fieldset class="filter-group"><legend>Instruction language</legend><label class="check"><input type="checkbox" checked>Uzbek</label><label class="check"><input type="checkbox">Russian</label><label class="check"><input type="checkbox">English</label></fieldset>
+        <fieldset class="filter-group"><legend>Delivery mode</legend><label class="check"><input type="checkbox" checked>In-person</label><label class="check"><input type="checkbox">Online</label></fieldset>
+        <fieldset class="filter-group"><legend>Reviews</legend><label class="check"><input type="checkbox">At least 20 reviews</label></fieldset>
+        <div class="filter-group"><h2>Distance</h2><div class="muted">Within 5 km of your location</div></div>
+      </aside>
+      <section class="results" aria-labelledby="results-title">
+        <div class="results-head"><h1 id="results-title">148 results in Tashkent</h1>
+          <select class="select" aria-label="Sort by"><option>Sort: Relevance</option><option>Price</option><option>Distance</option><option>Popularity</option></select></div>
+        <div class="result-list">
+          <article class="panel card">
+            <div class="card-main"><div class="avatar" aria-hidden="true">BM</div>
+              <div class="card-info"><h3><a href="/centers/bright-minds">Bright Minds Center</a> <span class="verified">Verified</span></h3><div class="card-subject">Math, Physics · Grades 9–11</div><div class="rating"><b>★ 4.8</b> <small>(126 reviews)</small> · 1.2 km</div><div class="tags"><span class="tag">Uzbek · Russian</span><span class="tag">In-person</span></div></div></div>
+            <div class="card-price"><div class="price">450 000 <small>UZS/month</small></div><div class="price-note">from 60 000/lesson</div><div class="contact"><button class="btn btn-primary" type="button">Telegram</button><button class="btn" type="button">Call</button></div></div>
+          </article>
+          <article class="panel card">
+            <div class="card-main"><div class="avatar" aria-hidden="true">LH</div>
+              <div class="card-info"><h3>Lingua Hub <span class="verified">Verified</span></h3><div class="card-subject">English, IELTS · All levels</div><div class="rating"><b>★ 4.7</b> <small>(89 reviews)</small> · 2.8 km</div><div class="tags"><span class="tag">English · Russian</span><span class="tag">In-person + online</span></div></div></div>
+            <div class="card-price"><div class="price">600 000 <small>UZS/month</small></div><div class="price-note">from Course fee 2 400 000</div><div class="contact"><button class="btn btn-primary" type="button">Telegram</button><button class="btn" type="button">Call</button></div></div>
+          </article>
+          <article class="panel card">
+            <div class="card-main"><div class="avatar" aria-hidden="true">CG</div>
+              <div class="card-info"><h3>Code Garden <span class="verified">Verified</span></h3><div class="card-subject">Programming · Beginner</div><div class="rating"><b>★ 4.5</b> <small>(41 reviews)</small> · 4.1 km</div><div class="tags"><span class="tag">Uzbek · English</span><span class="tag">Online</span></div></div></div>
+            <div class="card-price"><div class="price">520 000 <small>UZS/month</small></div><div class="price-note">from 75 000/hour</div><div class="contact"><button class="btn btn-primary" type="button">Telegram</button><button class="btn" type="button">Call</button></div></div>
+          </article>
+        </div>
+      </section>
+      <div class="map-wrap">
+        <svg class="map" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Map of centers within 5 km">
+          <rect class="park" x="20" y="180" width="110" height="80"/>
+          <path class="roads" d="M0 120H400M0 240H400M90 0V300M230 0V300M340 0V300"/>
+          <circle class="radius" cx="200" cy="140" r="95"/>
+          <circle class="you" cx="200" cy="140" r="7"/>
+          <g class="pin"><circle cx="120" cy="90" r="14"/><text x="120" y="95">1</text></g>
+          <g class="pin"><circle cx="250" cy="150" r="14"/><text x="250" y="155">2</text></g>
+          <g class="pin"><circle cx="310" cy="70" r="14"/><text x="310" y="75">3</text></g>
+          <g class="pin"><circle cx="170" cy="210" r="14"/><text x="170" y="215">4</text></g>
+        </svg>
+      </div>
+    </div>
+  </main>
+  <nav class="tabbar" aria-label="App"><a href="/">Browse</a><a href="/search" aria-current="page">Map</a><a href="/login">Saved</a><a href="/login">Account</a></nav>
+</body>
+</html>

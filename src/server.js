@@ -7,9 +7,15 @@ import { credentials, hashPassword, verifyPassword } from './password.js';
 
 const SESSION_SECONDS = 86_400;
 const files = new Map([
-  ['/', ['index.html', 'text/html; charset=utf-8']],
+  ['/', ['home.html', 'text/html; charset=utf-8']],
+  ['/search', ['search.html', 'text/html; charset=utf-8']],
+  ['/centers/bright-minds', ['center.html', 'text/html; charset=utf-8']],
+  ['/login', ['login.html', 'text/html; charset=utf-8']],
   ['/app.js', ['app.js', 'text/javascript; charset=utf-8']],
   ['/style.css', ['style.css', 'text/css; charset=utf-8']],
+  ['/ui.css', ['ui.css', 'text/css; charset=utf-8']],
+  ['/fonts/manrope-latin.woff2', ['fonts/manrope-latin.woff2', 'font/woff2']],
+  ['/fonts/Manrope-OFL.txt', ['fonts/Manrope-OFL.txt', 'text/plain; charset=utf-8']],
 ]);
 
 function json(res, status, body) {
@@ -55,7 +61,7 @@ export async function createApp({ store, origin, secure = false, now = Date.now 
     res.setHeader('Cache-Control', 'no-store');
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Referrer-Policy', 'no-referrer');
-    res.setHeader('Content-Security-Policy', "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'");
+    res.setHeader('Content-Security-Policy', "default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; connect-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'");
     if (secure) res.setHeader('Strict-Transport-Security', 'max-age=31536000');
     try {
       const path = new URL(req.url, origin).pathname;

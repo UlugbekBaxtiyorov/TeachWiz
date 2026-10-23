@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TeachWiz — Find a tutor or learning center</title>
+  <link rel="preload" href="/fonts/manrope-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/ui.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="/" aria-label="TeachWiz home"><span class="brand-mark" aria-hidden="true">T</span>Teachwiz</a>
+    <nav class="site-nav" aria-label="Main"><a href="/search?type=tutors">Tutors</a><a href="/search?type=centers">Centers</a><a href="/search?type=courses">Courses</a><a href="/login">For centers</a></nav>
+    <div class="header-actions">
+      <div class="lang" role="group" aria-label="Language"><button type="button" aria-pressed="false">UZ</button><button type="button" aria-pressed="false">RU</button><button type="button" aria-pressed="true">EN</button></div>
+      <a class="btn login-link" href="/login">Log in</a>
+    </div>
+  </header>
+  <main class="home">
+    <h1>Find the right tutor or learning center</h1>
+    <form class="home-search" action="/search" method="get" role="search">
+      <label class="field">What do you want to learn?<input name="q" placeholder="Subject, skill or course"></label>
+      <button class="btn btn-soft" type="submit" name="near" value="me">Use my location</button>
+      <button class="btn btn-primary" type="submit"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg> Search</button>
+    </form>
+    <nav class="categories" aria-label="Popular subjects">
+      <a href="/search?q=Math">Math</a><a href="/search?q=English">English</a><a href="/search?q=IELTS">IELTS</a><a href="/search?q=Programming">Programming</a><a href="/search?q=Kids">Kids</a><a href="/search?q=Exam+prep">Exam prep</a>
+    </nav>
+    <h2>Top rated near you</h2>
+    <div class="top-rated">
+      <article class="panel card stacked">
+        <div class="card-main"><div class="avatar" aria-hidden="true">BM</div>
+          <div class="card-info"><h3><a href="/centers/bright-minds">Bright Minds Center</a> <span class="verified">Verified</span></h3><div class="card-subject">Math, Physics · Grades 9–11</div><div class="rating"><b>★ 4.8</b> <small>(126 reviews)</small> · 1.2 km</div><div class="tags"><span class="tag">Uzbek · Russian</span><span class="tag">In-person</span></div></div></div>
+        <div class="card-price"><div class="price">450 000 <small>UZS/month</small></div><div class="price-note">from 60 000/lesson</div><div class="contact"><button class="btn btn-primary" type="button">Telegram</button><button class="btn" type="button">Call</button></div></div>
+      </article>
+    </div>
+  </main>
+  <nav class="tabbar" aria-label="App"><a href="/" aria-current="page">Browse</a><a href="/search">Map</a><a href="/login">Saved</a><a href="/login">Account</a></nav>
+</body>
+</html>
