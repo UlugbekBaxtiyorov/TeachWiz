@@ -29,14 +29,14 @@
     <div class="search-layout">
       <aside class="filters panel" aria-label="Filters">
         <div class="filter-group"><h2>Price per month (UZS)</h2><div class="range" aria-hidden="true"><span></span></div><div class="muted">150 000 – 1 200 000</div></div>
-        <fieldset class="filter-group"><legend>Minimum rating</legend><button class="chip" type="button" aria-pressed="true">4.5+</button><button class="chip" type="button" aria-pressed="false">4.0+</button></fieldset>
-        <fieldset class="filter-group"><legend>Instruction language</legend><label class="check"><input type="checkbox" checked>Uzbek</label><label class="check"><input type="checkbox">Russian</label><label class="check"><input type="checkbox">English</label></fieldset>
-        <fieldset class="filter-group"><legend>Delivery mode</legend><label class="check"><input type="checkbox" checked>In-person</label><label class="check"><input type="checkbox">Online</label></fieldset>
-        <fieldset class="filter-group"><legend>Reviews</legend><label class="check"><input type="checkbox">At least 20 reviews</label></fieldset>
+        <div class="filter-group" role="group" aria-labelledby="filter-rating"><h2 id="filter-rating">Minimum rating</h2><button class="chip" type="button" aria-pressed="true">4.5+</button><button class="chip" type="button" aria-pressed="false">4.0+</button></div>
+        <div class="filter-group" role="group" aria-labelledby="filter-language"><h2 id="filter-language">Instruction language</h2><label class="check"><input type="checkbox" checked>Uzbek</label><label class="check"><input type="checkbox">Russian</label><label class="check"><input type="checkbox">English</label></div>
+        <div class="filter-group" role="group" aria-labelledby="filter-delivery"><h2 id="filter-delivery">Delivery mode</h2><label class="check"><input type="checkbox" checked>In-person</label><label class="check"><input type="checkbox">Online</label></div>
+        <div class="filter-group" role="group" aria-labelledby="filter-reviews"><h2 id="filter-reviews">Reviews</h2><label class="check"><input type="checkbox">At least 20 reviews</label></div>
         <div class="filter-group"><h2>Distance</h2><div class="muted">Within 5 km of your location</div></div>
       </aside>
       <section class="results" aria-labelledby="results-title">
-        <div class="results-head"><h1 id="results-title">148 results in Tashkent</h1>
+        <div class="results-head"><h1 id="results-title">148 results<span class="results-where"> in Tashkent</span></h1>
           <select class="select" aria-label="Sort by"><option>Sort: Relevance</option><option>Price</option><option>Distance</option><option>Popularity</option></select></div>
         <div class="result-list">
           <article class="panel card">
