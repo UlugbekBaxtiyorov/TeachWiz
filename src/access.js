@@ -1,9 +1,9 @@
 // Roles are independent personas, not an implicit privilege hierarchy.
 const grants = new Map([
   ['guest', []],
-  ['student', ['account:read', 'workspace:student']],
-  ['representative', ['account:read', 'workspace:representative']],
-  ['admin', ['account:read', 'workspace:admin']],
+  ['student', ['account:read', 'workspace:student', 'verification:own', 'listings:own']],
+  ['representative', ['account:read', 'workspace:representative', 'verification:own', 'listings:own']],
+  ['admin', ['account:read', 'workspace:admin', 'verification:review', 'listings:review']],
 ]);
 
 export function permissionsFor(user) {

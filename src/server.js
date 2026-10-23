@@ -5,11 +5,13 @@ import { pathToFileURL } from 'node:url';
 import { openStore } from './store.js';
 import { credentials, hashPassword, verifyPassword } from './password.js';
 import { requirePermission } from './access.js';
+import { applicationInput, reviewInput, listingInput } from './verification.js';
 
 const SESSION_SECONDS = 86_400;
 const files = new Map([
   ['/', ['index.html', 'text/html; charset=utf-8']],
   ['/app.js', ['app.js', 'text/javascript; charset=utf-8']],
+  ['/verification.js', ['verification.js', 'text/javascript; charset=utf-8']],
   ['/style.css', ['style.css', 'text/css; charset=utf-8']],
 ]);
 
@@ -23,6 +25,15 @@ const apiRoutes = new Map([
   ['/api/workspaces/student', { method: 'GET', permission: 'workspace:student', workspace: 'student' }],
   ['/api/workspaces/representative', { method: 'GET', permission: 'workspace:representative', workspace: 'representative' }],
   ['/api/workspaces/admin', { method: 'GET', permission: 'workspace:admin', workspace: 'admin' }],
+  ['/api/verification', { method: 'GET', permission: 'verification:own' }],
+  ['/api/verification/submit', { method: 'POST', permission: 'verification:own' }],
+  ['/api/admin/verification', { method: 'GET', permission: 'verification:review' }],
+  ['/api/admin/verification/review', { method: 'POST', permission: 'verification:review' }],
+  ['/api/listings', { method: 'GET', public: true }],
+  ['/api/listings/mine', { method: 'GET', permission: 'listings:own' }],
+  ['/api/listings/submit', { method: 'POST', permission: 'listings:own' }],
+  ['/api/admin/listings', { method: 'GET', permission: 'listings:review' }],
+  ['/api/admin/listings/review', { method: 'POST', permission: 'listings:review' }],
 ]);
 
 function json(res, status, body) {
@@ -91,6 +102,15 @@ export async function createApp({ store, origin, secure = false, now = Date.now 
         return json(res, 405, { error: `Use ${route.method}.` });
       }
       if (path === '/api/auth/session') return json(res, 200, { user: sessionUser });
+      if (path === '/api/verification') return json(res, 200, {
+        applications: store.applicationsFor(sessionUser.id), verified: store.isVerifiedRepresentative(sessionUser.id),
+      });
+      if (path === '/api/admin/verification') return json(res, 200, {
+        applications: store.pendingApplications(), accounts: { student: 0, representative: 0, admin: 0, ...store.userCounts() },
+      });
+      if (path === '/api/listings') return json(res, 200, { listings: store.publishedListings() });
+      if (path === '/api/listings/mine') return json(res, 200, { listings: store.listingsFor(sessionUser.id) });
+      if (path === '/api/admin/listings') return json(res, 200, { listings: store.pendingListings() });
       if (route.workspace) {
         const result = { workspace: route.workspace, user: sessionUser };
         if (route.workspace === 'admin') {
@@ -104,6 +124,18 @@ export async function createApp({ store, origin, secure = false, now = Date.now 
         return json(res, 415, { error: 'Use application/json.' });
       }
       const body = await readJson(req);
+      if (path === '/api/verification/submit') {
+        return json(res, 201, { application: store.submitApplication(sessionUser.id, applicationInput(body), now()) });
+      }
+      if (path === '/api/admin/verification/review') {
+        return json(res, 200, { application: store.reviewApplication(sessionUser.id, reviewInput(body), now()) });
+      }
+      if (path === '/api/listings/submit') {
+        return json(res, 201, { listing: store.submitListing(sessionUser.id, listingInput(body), now()) });
+      }
+      if (path === '/api/admin/listings/review') {
+        return json(res, 200, { listing: store.reviewListing(sessionUser.id, reviewInput(body), now()) });
+      }
       if (path === '/api/auth/logout') {
         store.deleteSession(tokenFrom(req));
         res.setHeader('Set-Cookie', cookie('', 0));
