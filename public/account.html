@@ -27,6 +27,13 @@
     <section class="panel stack" id="signed-in" aria-labelledby="details-title" hidden>
       <h2 id="details-title" tabindex="-1">Your details</h2>
       <dl class="details"><dt>Email</dt><dd id="account-email"></dd><dt>Account type</dt><dd id="account-role"></dd></dl>
+      <button class="btn btn-primary" id="workspace-open" type="button" hidden>Open your workspace</button>
+      <section class="panel stack" id="workspace-panel" hidden aria-labelledby="workspace-title">
+        <h2 id="workspace-title" tabindex="-1"></h2>
+        <p class="muted" id="workspace-description"></p>
+        <dl class="details" id="workspace-counts" hidden></dl>
+        <div id="verification-panel"></div>
+      </section>
       <button class="btn" id="logout" type="button">Sign out</button>
     </section>
     <nav class="panel link-list" aria-label="Account shortcuts">
