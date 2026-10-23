@@ -1,4 +1,11 @@
 # TeachWiz
+![CI Pipeline](https://github.com/UlugbekBaxtiyorov/TeachWiz/actions/workflows/ci.yml/badge.svg)
+
+**Team PATRIOTS - Roles & Responsibilities**
+* **Akbar:** Team Lead & QA/DevOps (Sprint Planning, CI/CD, Testing)
+* **Ulugbek:** Backend Engineer (Database Schema, REST API, Auth)
+* **Shernur:** Frontend Engineer (UI Integration, API Binding)
+* **Sabina:** UI/UX Designer (Wireframes, Responsive Layouts)
 
 JavaScript backend and browser client. Implements [KAN-8](https://teachwiz.atlassian.net/browse/KAN-8) / [GitHub #2](https://github.com/UlugbekBaxtiyorov/TeachWiz/issues/2) authentication, [KAN-7](https://teachwiz.atlassian.net/browse/KAN-7) / [GitHub #1](https://github.com/UlugbekBaxtiyorov/TeachWiz/issues/1) role-based access, and [KAN-9](https://teachwiz.atlassian.net/browse/KAN-9) / [GitHub #3](https://github.com/UlugbekBaxtiyorov/TeachWiz/issues/3) representative verification.
 
