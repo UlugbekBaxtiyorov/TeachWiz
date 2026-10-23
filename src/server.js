@@ -4,12 +4,25 @@ import { randomBytes } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 import { openStore } from './store.js';
 import { credentials, hashPassword, verifyPassword } from './password.js';
+import { requirePermission } from './access.js';
 
 const SESSION_SECONDS = 86_400;
 const files = new Map([
   ['/', ['index.html', 'text/html; charset=utf-8']],
   ['/app.js', ['app.js', 'text/javascript; charset=utf-8']],
   ['/style.css', ['style.css', 'text/css; charset=utf-8']],
+]);
+
+// Every API route has an explicit policy. Unknown routes never reach a handler.
+const apiRoutes = new Map([
+  ['/api/auth/signup', { method: 'POST', public: true }],
+  ['/api/auth/login', { method: 'POST', public: true }],
+  // Clearing an absent/expired session remains safe and idempotent for guests.
+  ['/api/auth/logout', { method: 'POST', public: true }],
+  ['/api/auth/session', { method: 'GET', permission: 'account:read' }],
+  ['/api/workspaces/student', { method: 'GET', permission: 'workspace:student', workspace: 'student' }],
+  ['/api/workspaces/representative', { method: 'GET', permission: 'workspace:representative', workspace: 'representative' }],
+  ['/api/workspaces/admin', { method: 'GET', permission: 'workspace:admin', workspace: 'admin' }],
 ]);
 
 function json(res, status, body) {
@@ -64,16 +77,26 @@ export async function createApp({ store, origin, secure = false, now = Date.now 
         res.writeHead(200, { 'Content-Type': type });
         return res.end(body);
       }
-      if (req.method === 'GET' && path === '/api/auth/session') {
-        const user = store.sessionUser(tokenFrom(req), now());
-        return json(res, user ? 200 : 401, user ? { user } : { error: 'Sign in to continue.' });
+      const route = apiRoutes.get(path);
+      if (!route) return json(res, 404, { error: 'Not found.' });
+      // Resolve the current database role on every protected request. Client
+      // headers, query parameters, bodies and stale browser state are ignored.
+      let sessionUser;
+      if (route.public !== true) {
+        sessionUser = store.sessionUser(tokenFrom(req), now());
+        requirePermission(sessionUser, route.permission);
       }
-      if (!['/api/auth/signup', '/api/auth/login', '/api/auth/logout'].includes(path)) {
-        return json(res, 404, { error: 'Not found.' });
+      if (req.method !== route.method) {
+        res.setHeader('Allow', route.method);
+        return json(res, 405, { error: `Use ${route.method}.` });
       }
-      if (req.method !== 'POST') {
-        res.setHeader('Allow', 'POST');
-        return json(res, 405, { error: 'Use POST.' });
+      if (path === '/api/auth/session') return json(res, 200, { user: sessionUser });
+      if (route.workspace) {
+        const result = { workspace: route.workspace, user: sessionUser };
+        if (route.workspace === 'admin') {
+          result.accounts = { student: 0, representative: 0, admin: 0, ...store.userCounts() };
+        }
+        return json(res, 200, result);
       }
       // Require a configured origin; never trust Host or forwarded headers for CSRF checks.
       if (req.headers.origin !== origin) return json(res, 403, { error: 'Request origin is not allowed.' });

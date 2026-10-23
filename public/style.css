@@ -36,6 +36,8 @@ input::placeholder { color: #8c958f; }
 .primary:hover { background: #1b3b2e; }
 .primary span { font-size: 19px; }
 button:disabled { opacity: .55; cursor: wait; }
+#logout { margin-top: 16px; }
+#workspace-panel { margin: 24px 0; }
 .account-note { text-align: center; font-size: 11px; color: #7b847e; margin-top: 24px; }
 .status { min-height: 22px; font-size: 13px; line-height: 1.5; color: #6d4327; margin-top: 22px; }
 dl { border-top: 1px solid #dedfd4; margin: 25px 0; padding-top: 20px; }
