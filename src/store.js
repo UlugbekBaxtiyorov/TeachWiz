@@ -2,6 +2,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { mkdirSync, chmodSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
+import { providerStore } from './provider-store.js';
 
 export const digest = (value) => createHash('sha256').update(value).digest('hex');
 
@@ -11,7 +12,7 @@ export function openStore(filename = resolve('data/teachwiz.sqlite')) {
   if (filename !== ':memory:') chmodSync(filename, 0o600);
   db.exec('PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;');
   const version = db.prepare('PRAGMA user_version').get().user_version;
-  if (version > 1) {
+  if (version > 2) {
     db.close();
     throw new Error('Database schema is newer than this application.');
   }
@@ -38,8 +39,47 @@ export function openStore(filename = resolve('data/teachwiz.sqlite')) {
     PRAGMA user_version = 1;
     COMMIT;
   `);
+  if (version < 2) db.exec(`
+    BEGIN IMMEDIATE;
+    CREATE TABLE representative_applications (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      provider_type TEXT NOT NULL CHECK (provider_type IN ('tutor', 'learning_center')),
+      provider_name TEXT NOT NULL,
+      contact_details TEXT NOT NULL,
+      evidence TEXT NOT NULL,
+      status TEXT NOT NULL CHECK (status IN ('pending', 'approved', 'rejected')),
+      submitted_at INTEGER NOT NULL,
+      reviewed_by TEXT REFERENCES users(id) ON DELETE SET NULL,
+      reviewed_at INTEGER,
+      review_reason TEXT NOT NULL DEFAULT '',
+      CHECK ((status = 'pending' AND reviewed_at IS NULL) OR (status != 'pending' AND reviewed_at IS NOT NULL)),
+      CHECK (status != 'rejected' OR length(trim(review_reason)) > 0)
+    ) STRICT;
+    CREATE UNIQUE INDEX applications_active ON representative_applications(user_id) WHERE status IN ('pending', 'approved');
+    CREATE INDEX applications_owner ON representative_applications(user_id);
+    CREATE INDEX applications_queue ON representative_applications(status);
+    CREATE TABLE listings (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      title TEXT NOT NULL,
+      description TEXT NOT NULL,
+      status TEXT NOT NULL CHECK (status IN ('pending', 'approved', 'rejected')),
+      submitted_at INTEGER NOT NULL,
+      reviewed_by TEXT REFERENCES users(id) ON DELETE SET NULL,
+      reviewed_at INTEGER,
+      review_reason TEXT NOT NULL DEFAULT '',
+      CHECK ((status = 'pending' AND reviewed_at IS NULL) OR (status != 'pending' AND reviewed_at IS NOT NULL)),
+      CHECK (status != 'rejected' OR length(trim(review_reason)) > 0)
+    ) STRICT;
+    CREATE INDEX listings_owner ON listings(user_id);
+    CREATE INDEX listings_queue ON listings(status);
+    PRAGMA user_version = 2;
+    COMMIT;
+  `);
 
   return {
+    ...providerStore(db),
     close: () => db.close(),
     userCounts: () => Object.fromEntries(db.prepare('SELECT role, count(*) AS count FROM users GROUP BY role').all()
       .map(({ role, count }) => [role, count])),

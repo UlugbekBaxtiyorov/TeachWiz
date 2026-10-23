@@ -23,7 +23,7 @@ h1 em { font-weight: 400; }
 h2 { font-family: Georgia, 'Times New Roman', serif; font-size: 36px; font-weight: 400; letter-spacing: -1px; margin: 13px 0; }
 .subtitle { color: #6c766f; font-size: 13px; line-height: 1.6; margin-bottom: 29px; }
 .modes { display: flex; gap: 4px; background: #eaece3; padding: 4px; border-radius: 7px; margin-bottom: 29px; }
-button, input { font: inherit; }
+button, input, select, textarea { font: inherit; }
 button { cursor: pointer; }
 .modes button { flex: 1; border: 0; border-radius: 5px; padding: 12px 6px; font-size: 12px; background: transparent; color: #53635a; }
 .modes button[aria-pressed="true"] { background: #fff; color: #243e35; box-shadow: 0 1px 4px #21362912; }
@@ -38,6 +38,19 @@ input::placeholder { color: #8c958f; }
 button:disabled { opacity: .55; cursor: wait; }
 #logout { margin-top: 16px; }
 #workspace-panel { margin: 24px 0; }
+#verification-panel h4 { margin: 30px 0 12px; font-size: 17px; }
+#verification-panel h5 { font-size: 15px; margin: 0 0 12px; overflow-wrap: anywhere; }
+#verification-panel h6 { font-size: 12px; margin: 16px 0 5px; }
+#verification-panel form > .primary { margin-top: 20px; }
+select, textarea { width: 100%; padding: 12px; border: 1px solid #d4dbd0; border-radius: 6px; background: #fff; color: #243e35; }
+textarea { min-height: 100px; resize: vertical; }
+.secondary { border: 1px solid #294f40; border-radius: 6px; background: transparent; color: #294f40; padding: 12px; width: 100%; }
+.review-card { border: 1px solid #d4dbd0; background: #fff; border-radius: 8px; padding: 18px; margin: 16px 0; }
+.review-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+.review-actions button { width: auto; flex: 1; justify-content: center; }
+.submitted-text { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13px; line-height: 1.6; }
+.badge { font-size: 12px; color: #294f40; font-weight: 600; }
+.empty-state { font-size: 13px; color: #6c766f; }
 .account-note { text-align: center; font-size: 11px; color: #7b847e; margin-top: 24px; }
 .status { min-height: 22px; font-size: 13px; line-height: 1.5; color: #6d4327; margin-top: 22px; }
 dl { border-top: 1px solid #dedfd4; margin: 25px 0; padding-top: 20px; }

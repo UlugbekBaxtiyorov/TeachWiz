@@ -1,3 +1,5 @@
+import { clearWorkflows, loadWorkflows } from './verification.js';
+
 const byId = (id) => document.getElementById(id);
 const form = byId('auth-form');
 const status = byId('status');
@@ -13,11 +15,27 @@ const workspaces = new Map([
 function setBusy(value) {
   busy = value;
   for (const id of ['submit', 'logout', 'login-mode', 'signup-mode', 'workspace-open']) byId(id).disabled = value;
+  for (const button of byId('verification-panel').querySelectorAll('button:not([data-blocked])')) button.disabled = value;
   form.setAttribute('aria-busy', String(value));
+}
+
+function showCounts(accounts) {
+  byId('workspace-counts').replaceChildren();
+  if (accounts) {
+    for (const [key, label] of [['student', 'Students'], ['representative', 'Representatives'], ['admin', 'Admins']]) {
+      const name = document.createElement('dt');
+      const count = document.createElement('dd');
+      name.textContent = label;
+      count.textContent = String(accounts[key]);
+      byId('workspace-counts').append(name, count);
+    }
+  }
+  byId('workspace-counts').hidden = !accounts;
 }
 
 function showUser(user, focus = false) {
   currentUser = user;
+  clearWorkflows();
   byId('workspace-panel').hidden = true;
   byId('workspace-title').textContent = '';
   byId('workspace-description').textContent = '';
@@ -118,16 +136,17 @@ byId('workspace-open').addEventListener('click', async () => {
     if (!details) throw new Error('Unknown workspace.');
     byId('workspace-title').textContent = details.title;
     byId('workspace-description').textContent = details.description;
-    if (result.accounts) {
-      for (const [key, label] of [['student', 'Students'], ['representative', 'Representatives'], ['admin', 'Admins']]) {
-        const name = document.createElement('dt');
-        const count = document.createElement('dd');
-        name.textContent = label;
-        count.textContent = String(result.accounts[key]);
-        byId('workspace-counts').append(name, count);
-      }
-    }
-    byId('workspace-counts').hidden = !result.accounts;
+    showCounts(result.accounts);
+    await loadWorkflows(result.workspace, {
+      setBusy,
+      showCounts,
+      setStatus: (message) => { status.textContent = message; },
+      onAccessChanged: async () => {
+        await restoreSession();
+        status.textContent = 'Your access has changed. Open your workspace to continue.';
+      },
+    });
+    if (currentUser?.role !== result.workspace) return;
     byId('workspace-panel').hidden = false;
     byId('workspace-title').focus();
     status.textContent = '';
