@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Saved — TeachWiz</title>
+  <link rel="preload" href="/fonts/manrope-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/ui.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="/" aria-label="TeachWiz home"><span class="brand-mark" aria-hidden="true">T</span>Teachwiz</a>
+    <nav class="site-nav" aria-label="Main"><a href="/search?type=tutors">Tutors</a><a href="/search?type=centers">Centers</a><a href="/search?type=courses">Courses</a><a href="/for-centers">For centers</a></nav>
+    <div class="header-actions">
+      <div class="lang" role="group" aria-label="Language"><button type="button" aria-pressed="false">UZ</button><button type="button" aria-pressed="false">RU</button><button type="button" aria-pressed="true">EN</button></div>
+      <a class="btn login-link" href="/login">Log in</a>
+    </div>
+  </header>
+  <main class="narrow-page stack">
+    <h1 class="page-title">Saved</h1>
+    <section class="panel empty">
+      <div class="empty-icon" aria-hidden="true"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h12v18l-6-4-6 4z"/></svg></div>
+      <h2>No saved centers yet</h2>
+      <p class="muted">Tutors and learning centers you save will appear here, so you can compare them later.</p>
+      <a class="btn btn-primary" href="/search">Browse centers</a>
+    </section>
+  </main>
+  <nav class="tabbar" aria-label="App"><a href="/">Browse</a><a href="/search">Map</a><a href="/saved" aria-current="page">Saved</a><a href="/account">Account</a></nav>
+</body>
+</html>

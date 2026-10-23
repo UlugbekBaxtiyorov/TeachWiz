@@ -92,4 +92,5 @@ async function restoreSession() {
   } finally { setBusy(false); }
 }
 
+if (location.hash === '#signup') setMode('signup');
 await restoreSession();

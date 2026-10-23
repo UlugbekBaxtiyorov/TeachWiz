@@ -10,7 +10,7 @@ Use **Node.js 24.19 or later**. There are no third-party dependencies to install
 npm start
 ```
 
-Open **http://localhost:3000**. Sign in at **/login**. Use that exact origin: write requests from a different origin (including `127.0.0.1`) are rejected. `npm run dev` restarts the server when source files change. `npm test` runs the HTTP integration tests against temporary databases using the actual password hashing parameters.
+Open **http://localhost:3000**. Sign in at **/login**; **/account** shows the signed-in account. Use that exact origin: write requests from a different origin (including `127.0.0.1`) are rejected. `npm run dev` restarts the server when source files change. `npm test` runs the HTTP integration tests against temporary databases using the actual password hashing parameters.
 
 Users and sessions persist in `data/teachwiz.sqlite`, which is excluded from Git. The application uses Node's built-in `node:sqlite` API, which is a release-candidate API in Node 24; pin and test the Node version when deploying.
 
@@ -51,4 +51,4 @@ Emails are trimmed and treated case-insensitively. Passwords are preserved exact
 
 ## Layout
 
-`src/server.js` serves the API and an explicit allowlist of static files. `src/store.js` owns the initial SQLite schema and persistence; `src/password.js` owns credentials and password hashing. `src/create-admin.js` is the local provisioning command. `public/` contains the browser client: the responsive home (`/`), search (`/search`) and center profile (`/centers/bright-minds`) pages from [KAN-13](https://teachwiz.atlassian.net/browse/KAN-13) share `ui.css` and a self-hosted Manrope font (SIL OFL, `public/fonts/Manrope-OFL.txt`), and `login.html` with `app.js` is the sign-in page; `test/` exercises the HTTP API, persistence, abuse controls, and admin flow.
+`src/server.js` serves the API and an explicit allowlist of static files. `src/store.js` owns the initial SQLite schema and persistence; `src/password.js` owns credentials and password hashing. `src/create-admin.js` is the local provisioning command. `public/` contains the browser client: the responsive home (`/`), search (`/search`) and center profile (`/centers/bright-minds`) pages from [KAN-13](https://teachwiz.atlassian.net/browse/KAN-13) share `ui.css` and a self-hosted Manrope font (SIL OFL, `public/fonts/Manrope-OFL.txt`), as do `/saved`, `/for-centers`, the sign-in page (`login.html` with `app.js`) and `/account` (`account.js`); `test/` exercises the HTTP API, persistence, abuse controls, and admin flow.

@@ -216,13 +216,17 @@ test('excess concurrent password work is rejected without creating an account', 
   assert.equal(f.store.findUser(`load${rejected}@example.test`), undefined);
 });
 
-test('serves the responsive UI pages, sign-in page and self-hosted font', async (t) => {
+test('serves the UI pages, sign-in and account pages, and self-hosted font', async (t) => {
   const app = await fixture(t);
   for (const [path, type, text] of [
     ['/', 'text/html', 'Find the right tutor or learning center'],
     ['/search', 'text/html', 'results in Tashkent'],
     ['/centers/bright-minds', 'text/html', 'Bright Minds Center'],
     ['/login', 'text/html', 'id="auth-form"'],
+    ['/account', 'text/html', 'src="/account.js"'],
+    ['/saved', 'text/html', 'No saved centers yet'],
+    ['/for-centers', 'text/html', 'Get found by students near you'],
+    ['/account.js', 'text/javascript', '/api/auth/session'],
     ['/ui.css', 'text/css', '@font-face'],
     ['/fonts/manrope-latin.woff2', 'font/woff2', 'wOF2'],
   ]) {
