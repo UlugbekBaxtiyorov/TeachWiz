@@ -41,6 +41,8 @@ export function openStore(filename = resolve('data/teachwiz.sqlite')) {
 
   return {
     close: () => db.close(),
+    userCounts: () => Object.fromEntries(db.prepare('SELECT role, count(*) AS count FROM users GROUP BY role').all()
+      .map(({ role, count }) => [role, count])),
     findUser: (email) => db.prepare('SELECT * FROM users WHERE email = ?').get(email),
     createUser(email, passwordHash, role = 'student', now = Date.now()) {
       const id = randomUUID();

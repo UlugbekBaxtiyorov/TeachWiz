@@ -41,6 +41,12 @@
         <h2 tabindex="-1" id="session-title">A fresh start.</h2>
         <p class="subtitle">Welcome to your TeachWiz account.</p>
         <dl><dt>Email</dt><dd id="account-email"></dd><dt>Account</dt><dd id="account-role"></dd></dl>
+        <button class="primary" id="workspace-open" type="button">Open your workspace <span aria-hidden="true">↗</span></button>
+        <section id="workspace-panel" hidden aria-labelledby="workspace-title">
+          <h3 id="workspace-title" tabindex="-1"></h3>
+          <p id="workspace-description" class="subtitle"></p>
+          <dl id="workspace-counts" hidden></dl>
+        </section>
         <button class="primary" id="logout" type="button">Sign out <span aria-hidden="true">↗</span></button>
       </div>
       <p class="status" id="status" role="status" aria-live="polite"></p>
