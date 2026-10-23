@@ -1,47 +1,16 @@
-import { clearWorkflows, loadWorkflows } from './verification.js';
-
 const byId = (id) => document.getElementById(id);
 const form = byId('auth-form');
 const status = byId('status');
 let mode = 'login';
 let busy = false;
-let currentUser = null;
-const workspaces = new Map([
-  ['student', { title: 'Student workspace', description: 'You are signed in with a student account.' }],
-  ['representative', { title: 'Representative workspace', description: 'You are signed in with a representative account. Listing approval is managed separately.' }],
-  ['admin', { title: 'Platform administration', description: 'Account totals across the platform.' }],
-]);
 
 function setBusy(value) {
   busy = value;
-  for (const id of ['submit', 'logout', 'login-mode', 'signup-mode', 'workspace-open']) byId(id).disabled = value;
-  for (const button of byId('verification-panel').querySelectorAll('button:not([data-blocked])')) button.disabled = value;
+  for (const id of ['submit', 'logout', 'login-mode', 'signup-mode']) byId(id).disabled = value;
   form.setAttribute('aria-busy', String(value));
 }
 
-function showCounts(accounts) {
-  byId('workspace-counts').replaceChildren();
-  if (accounts) {
-    for (const [key, label] of [['student', 'Students'], ['representative', 'Representatives'], ['admin', 'Admins']]) {
-      const name = document.createElement('dt');
-      const count = document.createElement('dd');
-      name.textContent = label;
-      count.textContent = String(accounts[key]);
-      byId('workspace-counts').append(name, count);
-    }
-  }
-  byId('workspace-counts').hidden = !accounts;
-}
-
 function showUser(user, focus = false) {
-  currentUser = user;
-  clearWorkflows();
-  byId('workspace-panel').hidden = true;
-  byId('workspace-title').textContent = '';
-  byId('workspace-description').textContent = '';
-  byId('workspace-counts').replaceChildren();
-  byId('workspace-counts').hidden = true;
-  byId('workspace-open').hidden = !workspaces.has(user?.role);
   byId('auth-panel').hidden = Boolean(user);
   byId('session-panel').hidden = !user;
   byId('password').value = '';
@@ -111,52 +80,7 @@ byId('logout').addEventListener('click', async () => {
   } finally { setBusy(false); }
 });
 
-byId('workspace-open').addEventListener('click', async () => {
-  if (busy || !workspaces.has(currentUser?.role)) return;
-  const role = currentUser.role;
-  setBusy(true);
-  byId('workspace-panel').hidden = true;
-  byId('workspace-counts').replaceChildren();
-  status.textContent = 'Opening your workspace…';
-  try {
-    const response = await fetch(`/api/workspaces/${encodeURIComponent(role)}`, { credentials: 'same-origin' });
-    if (response.status === 401) {
-      showUser(null, true);
-      status.textContent = 'Your session has ended. Please sign in again.';
-      return;
-    }
-    if (response.status === 403) {
-      await restoreSession();
-      status.textContent = 'Your access has changed. Your account has been refreshed.';
-      return;
-    }
-    if (!response.ok) throw new Error('Workspace request failed.');
-    const result = await response.json();
-    const details = workspaces.get(result.workspace);
-    if (!details) throw new Error('Unknown workspace.');
-    byId('workspace-title').textContent = details.title;
-    byId('workspace-description').textContent = details.description;
-    showCounts(result.accounts);
-    await loadWorkflows(result.workspace, {
-      setBusy,
-      showCounts,
-      setStatus: (message) => { status.textContent = message; },
-      onAccessChanged: async () => {
-        await restoreSession();
-        status.textContent = 'Your access has changed. Open your workspace to continue.';
-      },
-    });
-    if (currentUser?.role !== result.workspace) return;
-    byId('workspace-panel').hidden = false;
-    byId('workspace-title').focus();
-    status.textContent = '';
-  } catch {
-    status.textContent = 'Could not open your workspace. Please try again.';
-  } finally { setBusy(false); }
-});
-
 async function restoreSession() {
-  showUser(null);
   setBusy(true);
   try {
     const response = await fetch('/api/auth/session', { credentials: 'same-origin' });
@@ -168,4 +92,5 @@ async function restoreSession() {
   } finally { setBusy(false); }
 }
 
+if (location.hash === '#signup') setMode('signup');
 await restoreSession();

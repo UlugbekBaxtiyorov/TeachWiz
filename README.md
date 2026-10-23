@@ -10,7 +10,7 @@ Use **Node.js 24.19 or later**. There are no third-party dependencies to install
 npm start
 ```
 
-Open **http://localhost:3000**. Use that exact origin: write requests from a different origin (including `127.0.0.1`) are rejected. `npm run dev` restarts the server when source files change. `npm test` runs the HTTP integration tests against temporary databases using the actual password hashing parameters.
+Open **http://localhost:3000**. Sign in at **/login**; **/account** shows the account, its role-specific workspace and verification workflow. Use that exact origin: write requests from a different origin (including `127.0.0.1`) are rejected. `npm run dev` restarts the server when source files change. `npm test` runs the HTTP integration tests against temporary databases using the actual password hashing parameters.
 
 Users and sessions persist in `data/teachwiz.sqlite`, which is excluded from Git. The application uses Node's built-in `node:sqlite` API, which is a release-candidate API in Node 24; pin and test the Node version when deploying.
 
@@ -60,7 +60,7 @@ When adding an API, declare its method and permission in `apiRoutes` in `src/ser
 
 ## Representative verification and publication
 
-Sign in and select **Open your workspace**. Students and existing representatives can apply as a **tutor** or **learning center**, supplying a provider name, contact details and supporting information. The administrator uses their own workspace to review the submitted details and independently check the evidence. There is no automatic identity or email verification, and the application does not download submitted URLs or accept identity-document uploads.
+Sign in, go to **/account**, and select **Open your workspace**. Students and existing representatives can apply as a **tutor** or **learning center**, supplying a provider name, contact details and supporting information. The administrator uses their own workspace to review the submitted details and independently check the evidence. There is no automatic identity or email verification, and the application does not download submitted URLs or accept identity-document uploads.
 
 Applications follow `pending → approved` or `pending → rejected`. Pending applicants retain their existing role. Approval and the assignment of the representative role happen in one database transaction, and existing sessions see the role on their next request. Rejection requires a reason, leaves the role unchanged, and allows a new application. Previous details, decisions, reviewer account IDs, timestamps and reasons remain stored. Each account can have only one pending or approved application; duplicate submissions, stale decisions and competing reviews return `409`. Admins cannot review their own applications or listings. Applicants can see only their own submissions, while the admin queue includes contact details and supporting information.
 
@@ -95,4 +95,6 @@ SQLite schema version 2 is applied automatically at startup to fresh and version
 
 ## Layout
 
-`src/server.js` serves the API and an explicit allowlist of static files. `src/access.js` defines role grants and denies unauthorized requests. `src/store.js` owns SQLite schema migrations and account persistence; `src/provider-store.js` handles transactional verification and publication, and `src/verification.js` validates those inputs. `src/password.js` owns credentials and password hashing. `src/create-admin.js` is the local provisioning command. `public/` contains the JavaScript client; `test/` exercises authentication, authorization, verification, publication, competing reviews and migration. `test-support/` holds the shared HTTP test fixture.
+`src/server.js` serves the API and an explicit allowlist of static files. `src/access.js` defines role grants. `src/store.js` owns SQLite schema migrations and account persistence; `src/provider-store.js` handles transactional verification and publication, and `src/verification.js` validates those inputs. `src/password.js` owns credentials and password hashing. `src/create-admin.js` is the local provisioning command.
+
+`public/` contains the responsive home (`/`), search (`/search`) and center profile (`/centers/bright-minds`) pages from [KAN-13](https://teachwiz.atlassian.net/browse/KAN-13). These pages, `/saved`, `/for-centers`, `/login` (`login.html` with `app.js`) and `/account` (`account.html` with `account.js`) share `ui.css` and a self-hosted Manrope font (SIL OFL, `public/fonts/Manrope-OFL.txt`). The account page exposes role-specific workspaces, admin totals and the verification/moderation UI (`verification.js`). `test/` exercises authentication, authorization, verification, publication, competing reviews, migration and UI asset serving. `test-support/` holds the shared HTTP test fixture.

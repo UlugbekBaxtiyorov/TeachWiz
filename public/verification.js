@@ -38,7 +38,7 @@ function field(form, label, name, kind, max, value = '') {
 }
 
 function button(label, value) {
-  const result = node('button', label, 'primary');
+  const result = node('button', label, 'btn btn-primary');
   result.type = 'submit';
   if (value) result.value = value;
   return result;
@@ -72,7 +72,7 @@ export async function loadWorkflows(role, controls) {
   };
   const refresh = button('Refresh verification and listings');
   refresh.type = 'button';
-  refresh.className = 'secondary';
+  refresh.className = 'btn';
   refresh.addEventListener('click', () => run(async () => {}, 'Status refreshed.'));
   panel.append(refresh);
 

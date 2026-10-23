@@ -172,3 +172,25 @@ test('excess concurrent password work is rejected without creating an account', 
   const rejected = results.findIndex((r) => r.status === 503);
   assert.equal(f.store.findUser(`load${rejected}@example.test`), undefined);
 });
+
+test('serves the UI pages, sign-in and account pages, and self-hosted font', async (t) => {
+  const app = await fixture(t);
+  for (const [path, type, text] of [
+    ['/', 'text/html', 'Find the right tutor or learning center'],
+    ['/search', 'text/html', '148 results'],
+    ['/centers/bright-minds', 'text/html', 'Bright Minds Center'],
+    ['/login', 'text/html', 'id="auth-form"'],
+    ['/account', 'text/html', 'src="/account.js"'],
+    ['/saved', 'text/html', 'No saved centers yet'],
+    ['/for-centers', 'text/html', 'Get found by students near you'],
+    ['/account.js', 'text/javascript', '/api/auth/session'],
+    ['/ui.css', 'text/css', '@font-face'],
+    ['/fonts/manrope-latin.woff2', 'font/woff2', 'wOF2'],
+  ]) {
+    const response = await fetch(`${app.base}${path}`);
+    assert.equal(response.status, 200, path);
+    assert.ok(response.headers.get('content-type').startsWith(type), path);
+    assert.ok((await response.text()).includes(text), path);
+    assert.match(response.headers.get('content-security-policy'), /font-src 'self'/);
+  }
+});
