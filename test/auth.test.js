@@ -49,7 +49,9 @@ test('database stores unique salted hashes and hashed session tokens, never plai
   assert.ok(db.prepare('SELECT token_hash FROM sessions').all().some((row) => row.token_hash === digest(rawToken)));
   assert.ok(!JSON.stringify(db.prepare('SELECT * FROM sessions').all()).includes(rawToken));
   db.close();
-  assert.equal((await stat(f.filename)).mode & 0o777, 0o600);
+  if (process.platform !== 'win32') {
+    assert.equal((await stat(f.filename)).mode & 0o777, 0o600);
+  }
 });
 
 test('wrong passwords and unknown accounts return the same generic login error', async (t) => {
