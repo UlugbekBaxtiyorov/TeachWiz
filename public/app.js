@@ -53,8 +53,8 @@ form.addEventListener('submit', async (event) => {
   event.preventDefault();
   if (busy) return;
   const password = byId('password').value;
-  if ([...password].length < 15 || [...password].length > 128) {
-    status.textContent = 'Use a password with 15 to 128 characters.';
+  if ([...password].length < 8 || [...password].length > 128) {
+    status.textContent = 'Use a password with 8 to 128 characters.';
     return;
   }
   setBusy(true);
