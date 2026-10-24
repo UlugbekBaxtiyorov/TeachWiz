@@ -19,16 +19,36 @@
     </div>
   </header>
   <main class="search-page live-catalog" data-catalog="search">
-    <div class="catalog-intro"><p class="eyebrow">Find your next step</p><h1>Learn something new.</h1><p class="muted">Find verified tutors and learning centers for the subjects that matter to you.</p></div>
     <form id="catalog-form" class="search-bar panel" action="/search" method="get" role="search">
       <label class="field">Subject, name or keyword<input name="q" maxlength="150" placeholder="e.g. IELTS, Math, Bright Minds" autocomplete="off"></label>
       <label class="field">Provider<select class="select" name="type"><option value="">Tutors &amp; centers</option><option value="tutors">Tutors</option><option value="centers">Learning centers</option><option value="courses">All courses</option></select></label>
       <button class="btn btn-primary" type="submit"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>Search</button>
     </form>
-    <div class="catalog-toolbar"><button class="chip filter-toggle" id="filter-toggle" type="button" aria-expanded="false" aria-controls="catalog-filters">Filters</button><div id="active-filters" class="active-filters" aria-label="Active filters"></div><a class="clear-search" href="/search">Clear all</a></div>
+    <div class="catalog-toolbar"><button class="chip filter-toggle" id="filter-toggle" type="button" aria-expanded="false" aria-controls="catalog-filters">Filters</button><div class="filter-shortcuts" aria-label="Quick filters"><button type="button" class="chip" id="quick-price">Price</button><button type="button" class="chip" id="quick-rating" aria-pressed="false">4.5+ ★</button><button type="button" class="chip" id="quick-language">Language</button><button type="button" class="chip" id="quick-online" aria-pressed="false">Online</button></div><div id="active-filters" class="active-filters" aria-label="Active filters"></div><a class="clear-search" href="/search">Clear all</a></div>
     <div class="search-layout catalog-layout">
       <aside class="filters panel catalog-filters" id="catalog-filters" aria-label="Search filters">
         <div class="filter-heading"><h2>Refine your search</h2><button class="btn filter-close" id="filter-close" type="button">Done</button></div>
+        <fieldset class="filter-group"><legend>Location</legend>
+          <label class="field">City<select class="select" name="city" form="catalog-form" id="filter-city"><option value="">All cities</option></select></label>
+          <label class="field">District<select class="select" name="district" form="catalog-form" id="filter-district"><option value="">All districts</option></select></label>
+        </fieldset>
+        <fieldset class="filter-group"><legend>Price per month (UZS)</legend>
+          <div class="fee-range"><label class="field">Minimum<input type="number" name="minFee" min="0" max="100000000" step="1" inputmode="numeric" placeholder="No minimum" form="catalog-form"></label><label class="field">Maximum<input type="number" name="maxFee" min="0" max="100000000" step="1" inputmode="numeric" placeholder="No maximum" form="catalog-form"></label></div>
+          <p class="field-hint">Based on listed monthly fees. Per-lesson and course prices are not converted.</p>
+        </fieldset>
+        <fieldset class="filter-group"><legend>Minimum rating</legend>
+          <label class="field"><span class="visually-hidden">Minimum rating</span><select class="select" name="minRating" form="catalog-form"><option value="">Any rating</option><option value="4.5">4.5+ ★</option><option value="4">4.0+ ★</option><option value="3">3.0+ ★</option></select></label>
+        </fieldset>
+        <fieldset class="filter-group"><legend>Skill level</legend>
+          <label class="check"><input type="checkbox" name="level" value="beginner" form="catalog-form">Beginner</label><label class="check"><input type="checkbox" name="level" value="intermediate" form="catalog-form">Intermediate</label><label class="check"><input type="checkbox" name="level" value="advanced" form="catalog-form">Advanced</label>
+          <p class="field-hint">Courses for all levels match any selected level.</p>
+        </fieldset>
+        <fieldset class="filter-group"><legend>Instruction language</legend>
+          <label class="check"><input type="checkbox" name="language" value="uz" form="catalog-form">Uzbek</label><label class="check"><input type="checkbox" name="language" value="ru" form="catalog-form">Russian</label><label class="check"><input type="checkbox" name="language" value="en" form="catalog-form">English</label>
+        </fieldset>
+        <fieldset class="filter-group"><legend>Delivery mode</legend>
+          <label class="check"><input type="checkbox" name="mode" value="in_person" form="catalog-form">In-person</label><label class="check"><input type="checkbox" name="mode" value="online" form="catalog-form">Online</label>
+        </fieldset>
         <fieldset class="filter-group"><legend>Preparation category</legend>
           <label class="check"><input type="checkbox" name="category" value="ielts" form="catalog-form">IELTS</label>
           <label class="check"><input type="checkbox" name="category" value="sat" form="catalog-form">SAT</label>
@@ -37,7 +57,7 @@
         <p class="field-hint">Only approved listings from verified representatives appear here.</p>
       </aside>
       <section class="results" aria-labelledby="results-title" id="catalog-results">
-        <div class="results-head"><h2 id="results-title" tabindex="-1">Finding your next class…</h2><select class="select" aria-label="Sort by" name="sort" form="catalog-form"><option value="relevance">Sort: Relevance</option><option value="newest">Newest first</option></select></div>
+        <div class="results-head"><h1 id="results-title" tabindex="-1">Finding your next class…</h1><select class="select" aria-label="Sort by" name="sort" form="catalog-form"><option value="relevance">Sort: Relevance</option><option value="newest">Newest first</option><option value="price_asc">Price: low to high</option><option value="price_desc">Price: high to low</option><option value="rating">Highest rated</option></select></div>
         <p class="status" id="catalog-status" role="status" aria-live="polite"></p>
         <div class="result-list" id="catalog-list"></div>
         <nav class="catalog-pagination" id="catalog-pagination" aria-label="Search results pages"></nav>

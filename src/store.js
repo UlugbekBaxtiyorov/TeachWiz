@@ -13,7 +13,7 @@ export function openStore(filename = resolve('data/teachwiz.sqlite')) {
   if (filename !== ':memory:') chmodSync(filename, 0o600);
   db.exec('PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;');
   const version = db.prepare('PRAGMA user_version').get().user_version;
-  if (version > 3) {
+  if (version > 4) {
     db.close();
     throw new Error('Database schema is newer than this application.');
   }
@@ -84,6 +84,26 @@ export function openStore(filename = resolve('data/teachwiz.sqlite')) {
     ALTER TABLE listings ADD COLUMN subjects TEXT NOT NULL DEFAULT '[]' CHECK (json_valid(subjects) AND json_type(subjects) = 'array');
     ALTER TABLE listings ADD COLUMN preparation_categories TEXT NOT NULL DEFAULT '[]' CHECK (json_valid(preparation_categories) AND json_type(preparation_categories) = 'array');
     PRAGMA user_version = 3;
+    COMMIT;
+  `);
+
+  if (version < 4) db.exec(`
+    BEGIN IMMEDIATE;
+    ALTER TABLE listings ADD COLUMN city TEXT NOT NULL DEFAULT '';
+    ALTER TABLE listings ADD COLUMN district TEXT NOT NULL DEFAULT '';
+    ALTER TABLE listings ADD COLUMN skill_level TEXT NOT NULL DEFAULT '' CHECK (skill_level IN ('', 'beginner', 'intermediate', 'advanced', 'all_levels'));
+    ALTER TABLE listings ADD COLUMN monthly_fee INTEGER CHECK (monthly_fee BETWEEN 0 AND 100000000);
+    ALTER TABLE listings ADD COLUMN instruction_languages TEXT NOT NULL DEFAULT '[]' CHECK (json_valid(instruction_languages) AND json_type(instruction_languages) = 'array');
+    ALTER TABLE listings ADD COLUMN delivery_modes TEXT NOT NULL DEFAULT '[]' CHECK (json_valid(delivery_modes) AND json_type(delivery_modes) = 'array');
+    CREATE TABLE provider_rating_summaries (
+      user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+      score_total INTEGER NOT NULL,
+      review_count INTEGER NOT NULL CHECK (review_count BETWEEN 0 AND 1000000),
+      updated_at INTEGER NOT NULL,
+      CHECK (score_total BETWEEN review_count AND review_count * 5)
+    ) STRICT;
+    CREATE INDEX listings_monthly_fee ON listings(monthly_fee) WHERE status = 'approved';
+    PRAGMA user_version = 4;
     COMMIT;
   `);
 
