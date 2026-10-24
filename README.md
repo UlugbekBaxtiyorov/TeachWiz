@@ -32,7 +32,7 @@ printf '%s' "$admin_password" | npm run admin:create -- admin@example.com
 unset admin_password
 ```
 
-Use 15–128 characters. The command fails for an existing email and never changes its password or role. There are no seeded credentials. This creates an account; it does not verify ownership of the email address.
+Use 8–128 characters. The command fails for an existing email and never changes its password or role. There are no seeded credentials. This creates an account; it does not verify ownership of the email address.
 
 ## API
 
