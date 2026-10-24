@@ -67,7 +67,9 @@ When adding an API, declare its method and permission in `apiRoutes` in `src/ser
 
 ## Representative verification and publication
 
-Sign in, go to **/account**, and select **Open your workspace**. Students and existing representatives can apply as a **tutor** or **learning center**, supplying a provider name, contact details and supporting information. The administrator uses their own workspace to review the submitted details and independently check the evidence. There is no automatic identity or email verification, and the application does not download submitted URLs or accept identity-document uploads.
+Sign in and go to **/account**. The verification workspace opens automatically. Students and existing representatives can apply as a **tutor** or **learning center**, supplying a provider name, contact details and supporting information. The administrator uses their own workspace to review the submitted details and independently check the evidence. There is no automatic identity or email verification, and the application does not download submitted URLs or accept identity-document uploads.
+
+The account UI uses the responsive design boards’ Manrope typography, green/cream palette, rounded cards and mobile navigation. It shows application progress, submitted details, review notes, resubmission and application history. Admins see separate representative and listing queues, with listing approval disabled until verification. The boards do not include a dedicated verification screen; this flow extends their existing visual language.
 
 Applications follow `pending → approved` or `pending → rejected`. Pending applicants retain their existing role. Approval and the assignment of the representative role happen in one database transaction, and existing sessions see the role on their next request. Rejection requires a reason, leaves the role unchanged, and allows a new application. Previous details, decisions, reviewer account IDs, timestamps and reasons remain stored. Each account can have only one pending or approved application; duplicate submissions, stale decisions and competing reviews return `409`. Admins cannot review their own applications or listings. Applicants can see only their own submissions, while the admin queue includes contact details and supporting information.
 
@@ -87,7 +89,7 @@ This ticket includes a minimal listing submission/moderation flow to enforce the
 | POST | `/api/admin/listings/review` | Admin: same review input as applications, using a listing UUID |
 | GET | `/api/listings` | Public: latest 100 publishable listings with provider name/type and title/description only |
 
-Unknown input fields, including owner IDs, roles and approval states, are rejected. The session identifies the applicant and reviewer. All new writes use the same Origin, JSON content-type and 8 KiB request-size checks as authentication. Queue refresh loads the next entries after reviews; the UI reports when a queue reaches the 100-entry limit. Reopen the workspace after a role change to refresh account access.
+Unknown input fields, including owner IDs, roles and approval states, are rejected. The session identifies the applicant and reviewer. All new writes use the same Origin, JSON content-type and 8 KiB request-size checks as authentication. Queue refresh loads the next entries after reviews; the UI reports when a queue reaches the 100-entry limit. Use **Refresh status** to reload applications and listings; account access is refreshed when the server reports a role change.
 
 SQLite schema version 2 is applied automatically at startup to fresh and version 1 databases without replacing users, password hashes, sessions or rate limits. Back up the database before upgrading. The previous binary rejects version 2, so rollback requires the matching database backup rather than running old code against the upgraded database.
 
