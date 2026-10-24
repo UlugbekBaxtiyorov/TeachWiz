@@ -20,8 +20,11 @@ export function providerStore(db) {
     FROM representative_applications WHERE id = ?`).get(id);
   const listing = (id) => {
     const row = db.prepare(`SELECT id, title, description, status, subjects, preparation_categories AS preparationCategories,
+      city, district, skill_level AS skillLevel, monthly_fee AS monthlyFee,
+      instruction_languages AS instructionLanguages, delivery_modes AS deliveryModes,
       submitted_at AS submittedAt, reviewed_at AS reviewedAt, review_reason AS reviewReason FROM listings WHERE id = ?`).get(id);
-    return row && { ...row, subjects: JSON.parse(row.subjects), preparationCategories: JSON.parse(row.preparationCategories) };
+    return row && { ...row, subjects: JSON.parse(row.subjects), preparationCategories: JSON.parse(row.preparationCategories),
+      instructionLanguages: JSON.parse(row.instructionLanguages), deliveryModes: JSON.parse(row.deliveryModes) };
   };
 
   return {
@@ -76,9 +79,12 @@ export function providerStore(db) {
           fail(403, 'Apply for representative verification before submitting a listing.');
         }
         const id = randomUUID();
-        db.prepare(`INSERT INTO listings (id, user_id, title, description, status, submitted_at, subjects, preparation_categories)
-          VALUES (?, ?, ?, ?, 'pending', ?, ?, ?)`).run(id, userId, input.title, input.description, now,
-          JSON.stringify(input.subjects || []), JSON.stringify(input.preparationCategories || []));
+        db.prepare(`INSERT INTO listings (id, user_id, title, description, status, submitted_at, subjects, preparation_categories,
+          city, district, skill_level, monthly_fee, instruction_languages, delivery_modes)
+          VALUES (?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(id, userId, input.title, input.description, now,
+          JSON.stringify(input.subjects || []), JSON.stringify(input.preparationCategories || []),
+          input.city || '', input.district || '', input.skillLevel || '', input.monthlyFee ?? null,
+          JSON.stringify(input.instructionLanguages || []), JSON.stringify(input.deliveryModes || []));
         return { ...listing(id), published: false };
       });
     },

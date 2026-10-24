@@ -91,7 +91,7 @@ This ticket includes a minimal listing submission/moderation flow to enforce the
 
 Unknown input fields, including owner IDs, roles and approval states, are rejected. The session identifies the applicant and reviewer. All new writes use the same Origin, JSON content-type and 8 KiB request-size checks as authentication. Queue refresh loads the next entries after reviews; the UI reports when a queue reaches the 100-entry limit. Use **Refresh status** to reload applications and listings; account access is refreshed when the server reports a role change.
 
-SQLite schema version 3 is applied automatically at startup to fresh and version 1/2 databases without replacing users, password hashes, sessions or rate limits. Back up the database before upgrading. The previous binary rejects version 3, so rollback requires the matching database backup rather than running old code against the upgraded database.
+SQLite schema version 4 is applied automatically at startup to fresh and version 1/2/3 databases without replacing users, password hashes, sessions or rate limits. Back up the database before upgrading. The previous binary rejects version 4, so rollback requires the matching database backup rather than running old code against the upgraded database.
 
 ## Security and deployment boundaries
 
@@ -121,3 +121,15 @@ Listings accept optional `subjects` (up to 12 names, 60 characters each) and `pr
 The responsive search, cards and details extend the supplied design boards. URLs preserve search state for sharing, reload and Back/Forward; mobile filters expand in place. Results, empty states and errors use live-region announcements, request cancellation prevents stale results, and all user content is rendered as text. The home page now shows real approved listings instead of static ratings and distances.
 
 Run `npm run demo` to view the complete app with synthetic listings and accounts at http://localhost:3113. This uses only in-memory SQLite and never opens the persistent database. Sign in as `student@example.test`, `provider1@example.test` or `admin@example.test` with demo-only password `Teachwiz demo passphrase 123`. Restarting resets the examples.
+
+## Multi-criteria filters (KAN-15)
+
+The same `/api/catalog` endpoint accepts `city` and `district` (exact, case-insensitive, up to 80 characters), repeatable `level` (`beginner`, `intermediate`, `advanced`, `all_levels`), `language` (`uz`, `ru`, `en`) and `mode` (`in_person`, `online`), inclusive `minFee` / `maxFee` (whole UZS, 0–100000000), and `minRating` (0–5, up to two decimal places). Values inside a repeated group use OR; groups combine with AND and keyword search. An `all_levels` listing matches each skill level. City/district options are derived only from currently published listings; changing city clears the selected district.
+
+Only an explicitly entered `monthlyFee` is used for price filtering; course/hourly/per-lesson fees are never converted. A zero fee is valid. Missing fees are `null`, excluded by any price bound and sorted last. The additional sort values are `price_asc`, `price_desc` and `rating`, with deterministic submission-time ordering for ties. Unknown/invalid filters and reversed fee ranges return 400.
+
+Schema v4 adds location, level, monthly fee, instruction languages and delivery modes to listings, plus `provider_rating_summaries`. Legacy rows retain unknown/empty values instead of invented defaults. All new fields are visible in representative submissions and admin review; they do not bypass publication checks. Optional API fields preserve compatibility with earlier clients; new UI submissions require subjects, a level and at least one language/mode.
+
+Ratings are provider-level aggregates of 1–5 star reviews. Search uses the unrounded average; unrated providers have `rating: null`, `reviewCount: 0` and do not satisfy a rating threshold. The existing codebase has no review submission/moderation service: `store.recordRatingSummary(userId, {scoreTotal, reviewCount})` is a trusted backend integration seam for that service. It has no HTTP write route. Representatives cannot set rating/approval fields through listing submission. Demo aggregates are synthetic, not real reviews.
+
+The design-aligned sidebar, mobile quick filters, removable filter chips, cards and public listing details display the same stored data. Use `npm run demo` to inspect both tickets together with authentication, verification and admin review. The search PR depends on #21; the filters PR depends on the search PR.
