@@ -1,0 +1,62 @@
+.catalog-intro { display: grid; gap: 8px; }
+.catalog-intro h1 { margin: 0; font-size: 32px; letter-spacing: -.04em; }
+.catalog-intro p { margin: 0; }
+.live-catalog .search-bar .field { min-width: 0; }
+.live-catalog .search-bar .field:first-child { flex: 3; }
+.catalog-toolbar, .active-filters { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.catalog-toolbar { min-height: 24px; }
+.active-filters { flex: 1; }
+.active-filters .chip { background: var(--brand-soft); color: var(--brand); font-size: 12px; white-space: normal; overflow-wrap: anywhere; }
+.clear-search { font-size: 13px; font-weight: 700; color: var(--brand); min-height: 44px; display: grid; place-items: center; }
+.catalog-layout { grid-template-columns: 250px minmax(0, 1fr); grid-template-areas: 'filters results'; }
+.catalog-filters { min-width: 0; padding: 20px; }
+.filter-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.filter-heading h2 { margin: 0; font-size: 16px; }
+.catalog-filters fieldset { margin: 0; padding: 0 0 16px; border: 0; border-bottom: 1px solid var(--line); min-width: 0; }
+.catalog-filters legend { margin: 0 0 10px; font-size: 13px; font-weight: 800; }
+.catalog-filters .check { min-height: 44px; }
+.catalog-filters .field-hint { margin: 0; }
+.filter-toggle, .filter-close { display: none; }
+.live-catalog .results { min-width: 0; }
+.live-catalog .results-head h2 { margin: 0; font-size: 20px; }
+.live-catalog .results-head { flex-wrap: wrap; }
+.live-catalog .status { margin: 0; font-size: 12px; }
+.catalog-card { padding: 22px; }
+.catalog-card .card-main, .catalog-card .card-info { min-width: 0; }
+.catalog-card h3, .catalog-card p, .catalog-card .card-subject { overflow-wrap: anywhere; }
+.catalog-card h3 { display: flex; flex-direction: column; align-items: start; gap: 5px; }
+.catalog-card .verified::before { content: '✓ '; }
+.catalog-card .listing-title { margin: 0; font-size: 14px; font-weight: 700; }
+.catalog-card > .btn { flex-shrink: 0; font-size: 13px; }
+.catalog-empty { grid-column: 1 / -1; padding: 48px 24px; display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center; }
+.catalog-empty h3, .catalog-empty p { margin: 0; }
+.catalog-pagination { display: flex; gap: 16px; align-items: center; justify-content: center; }
+.catalog-pagination:empty { display: none; }
+.home-catalog-heading { display: flex; justify-content: space-between; align-items: center; }
+.home .catalog-card { flex-direction: column; align-items: stretch; }
+.listing-page { width: 100%; max-width: 800px; margin: 0 auto; padding: 32px 24px; flex: 1; display: grid; align-content: start; gap: 24px; }
+.listing-detail { display: grid; gap: 16px; }
+.listing-detail h1, .listing-detail h2 { margin: 0; }
+.listing-detail h1 { font-size: 32px; overflow-wrap: anywhere; }
+.listing-detail h2 { font-size: 18px; margin-bottom: 12px; }
+.listing-description { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.7; font-size: 14px; margin: 0; }
+.listing-choices { border: 1px solid var(--line); border-radius: 10px; padding: 12px; margin: 0; display: flex; flex-wrap: wrap; gap: 8px 20px; min-width: 0; }
+.listing-choices legend { font-size: 12px; font-weight: 800; color: var(--muted); padding: 0 4px; }
+.listing-choices .check { display: flex; align-items: center; min-height: 44px; gap: 8px; font-size: 13px; }
+.listing-choices input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--brand); }
+@media (max-width: 1000px) {
+  .catalog-layout { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'filters' 'results'; }
+  .filter-toggle { display: inline-flex; }
+  .filter-close { display: inline-flex; font-size: 12px; }
+  .catalog-filters { display: none; }
+  .catalog-filters.is-open { display: flex; }
+  .catalog-card { flex-direction: column; align-items: stretch; padding: 20px; }
+}
+@media (max-width: 640px) {
+  .catalog-intro h1 { font-size: 28px; }
+  .catalog-card { padding: 16px; }
+  .catalog-card .avatar { width: 52px; height: 52px; font-size: 18px; }
+  .catalog-card h3 { font-size: 16px; }
+  .listing-page { padding: 24px 16px; }
+  .listing-detail h1 { font-size: 26px; }
+}

@@ -3,6 +3,7 @@ import { mkdirSync, chmodSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
 import { providerStore } from './provider-store.js';
+import { catalogStore } from './catalog.js';
 
 export const digest = (value) => createHash('sha256').update(value).digest('hex');
 
@@ -12,7 +13,7 @@ export function openStore(filename = resolve('data/teachwiz.sqlite')) {
   if (filename !== ':memory:') chmodSync(filename, 0o600);
   db.exec('PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;');
   const version = db.prepare('PRAGMA user_version').get().user_version;
-  if (version > 2) {
+  if (version > 3) {
     db.close();
     throw new Error('Database schema is newer than this application.');
   }
@@ -78,8 +79,17 @@ export function openStore(filename = resolve('data/teachwiz.sqlite')) {
     COMMIT;
   `);
 
+  if (version < 3) db.exec(`
+    BEGIN IMMEDIATE;
+    ALTER TABLE listings ADD COLUMN subjects TEXT NOT NULL DEFAULT '[]' CHECK (json_valid(subjects) AND json_type(subjects) = 'array');
+    ALTER TABLE listings ADD COLUMN preparation_categories TEXT NOT NULL DEFAULT '[]' CHECK (json_valid(preparation_categories) AND json_type(preparation_categories) = 'array');
+    PRAGMA user_version = 3;
+    COMMIT;
+  `);
+
   return {
     ...providerStore(db),
+    ...catalogStore(db),
     close: () => db.close(),
     userCounts: () => Object.fromEntries(db.prepare('SELECT role, count(*) AS count FROM users GROUP BY role').all()
       .map(({ role, count }) => [role, count])),

@@ -179,7 +179,7 @@ test('serves the UI pages, sign-in and account pages, and self-hosted font', asy
   const app = await fixture(t);
   for (const [path, type, text] of [
     ['/', 'text/html', 'Find the right tutor or learning center'],
-    ['/search', 'text/html', '148 results'],
+    ['/search', 'text/html', 'catalog-results'],
     ['/centers/bright-minds', 'text/html', 'Bright Minds Center'],
     ['/login', 'text/html', 'id="auth-form"'],
     ['/account', 'text/html', 'src="/account.js"'],

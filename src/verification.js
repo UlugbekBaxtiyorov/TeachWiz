@@ -1,3 +1,5 @@
+import { preparationCategories } from '../public/catalog-options.js';
+
 const fail = (message) => { throw Object.assign(new Error(message), { status: 400 }); };
 
 function fields(body, allowed) {
@@ -35,6 +37,18 @@ export function reviewInput(body) {
 }
 
 export function listingInput(body) {
-  fields(body, ['title', 'description']);
-  return { title: text(body.title, 'Listing title', 120), description: text(body.description, 'Description', 2000) };
+  fields(body, ['title', 'description', 'subjects', 'preparationCategories']);
+  const subjects = body.subjects ?? [];
+  const categories = body.preparationCategories ?? [];
+  if (!Array.isArray(subjects) || subjects.length > 12) fail('Supply up to 12 subjects.');
+  if (!Array.isArray(categories) || categories.length > 3
+      || categories.some((key) => typeof key !== 'string' || !Object.hasOwn(preparationCategories, key))) fail('Choose supported preparation categories.');
+  const uniqueSubjects = new Map(subjects.map((value) => {
+    const subject = text(value, 'Subject', 60);
+    return [subject.normalize('NFKC').toLowerCase(), subject];
+  }));
+  return {
+    title: text(body.title, 'Listing title', 120), description: text(body.description, 'Description', 2000),
+    subjects: [...uniqueSubjects.values()], preparationCategories: [...new Set(categories)],
+  };
 }

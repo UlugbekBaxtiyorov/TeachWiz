@@ -1,3 +1,4 @@
+import { addListingFields, listingValues, listingMetadata } from './listing-fields.js';
 const panel = document.getElementById('verification-panel');
 const types = { tutor: 'Tutor', learning_center: 'Learning center' };
 const statusLabels = { pending: 'In review', approved: 'Verified', rejected: 'Changes requested' };
@@ -232,7 +233,7 @@ export async function loadWorkflows(role, controls) {
   for (const listing of listingData.listings) {
     const card = node('article', '', 'panel listing-submission');
     const label = listing.published ? 'Published' : listing.status === 'rejected' ? 'Changes requested · Private' : listing.status === 'approved' ? 'Approved · Private' : 'In review · Private';
-    card.append(providerHeading(listing, listing.title, label, listing.published ? 'approved' : listing.status === 'rejected' ? 'rejected' : 'pending'), node('p', listing.description, 'submitted-text'));
+    card.append(providerHeading(listing, listing.title, label, listing.published ? 'approved' : listing.status === 'rejected' ? 'rejected' : 'pending'), listingMetadata(listing), node('p', listing.description, 'submitted-text'));
     if (listing.reviewReason) card.append(reviewNote(listing.reviewReason));
     listings.append(card);
   }
@@ -241,12 +242,13 @@ export async function loadWorkflows(role, controls) {
   form.append(node('h4', 'Submit a listing'));
   field(form, 'Listing title', 'title', 'input', 120);
   field(form, 'Listing description', 'description', 'textarea', 2000, '', 'Describe what you teach and who the lessons are for.');
+  addListingFields(form);
   const footer = node('div', '', 'form-footer');
   footer.append(node('p', 'Your listing stays private until approved.', 'field-hint'), button('Submit listing for review'));
   form.append(footer);
   form.addEventListener('submit', (event) => {
     event.preventDefault();
-    const values = Object.fromEntries(new FormData(form));
+    const values = listingValues(form);
     run(() => api('/api/listings/submit', values), 'Listing submitted. It stays private until approved.');
   });
   listings.append(form); panel.append(listings);
@@ -263,7 +265,7 @@ export async function loadWorkflows(role, controls) {
         node('p', 'Supporting information', 'field-label'), node('p', item.evidence, 'submitted-text'));
       form.append(details);
     } else {
-      form.append(node('p', item.description, 'submitted-text'), badge(item.representativeVerified ? 'Representative verified' : 'Representative verification required', item.representativeVerified ? 'approved' : 'pending'));
+      form.append(listingMetadata(item), node('p', item.description, 'submitted-text'), badge(item.representativeVerified ? 'Representative verified' : 'Representative verification required', item.representativeVerified ? 'approved' : 'pending'));
       if (!item.representativeVerified) form.append(node('p', 'Verify this representative before approving their listing.', 'field-hint'));
     }
     const reason = field(form, 'Review note', 'reason', 'textarea', 1000, '', 'Required when requesting changes. The applicant will see your note.');
