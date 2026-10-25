@@ -12,7 +12,7 @@ export function openStore(filename = resolve('data/teachwiz.sqlite')) {
   if (filename !== ':memory:') chmodSync(filename, 0o600);
   db.exec('PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;');
   const version = db.prepare('PRAGMA user_version').get().user_version;
-  if (version > 2) {
+  if (version > 3) {
     db.close();
     throw new Error('Database schema is newer than this application.');
   }
@@ -75,6 +75,21 @@ export function openStore(filename = resolve('data/teachwiz.sqlite')) {
     CREATE INDEX listings_owner ON listings(user_id);
     CREATE INDEX listings_queue ON listings(status);
     PRAGMA user_version = 2;
+    COMMIT;
+  `);
+  if (version < 3) db.exec(`
+    BEGIN IMMEDIATE;
+    CREATE TABLE reviews (
+      id TEXT PRIMARY KEY,
+      provider_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      student_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      rating INTEGER NOT NULL CHECK (rating BETWEEN 1 AND 5),
+      text TEXT NOT NULL CHECK (length(trim(text)) BETWEEN 1 AND 2000),
+      created_at INTEGER NOT NULL,
+      UNIQUE (provider_id, student_id)
+    ) STRICT;
+    CREATE INDEX reviews_provider ON reviews(provider_id, created_at DESC);
+    PRAGMA user_version = 3;
     COMMIT;
   `);
 
