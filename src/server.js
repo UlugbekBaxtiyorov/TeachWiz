@@ -24,11 +24,9 @@ const files = new Map([
   ['/fonts/Manrope-OFL.txt', ['fonts/Manrope-OFL.txt', 'text/plain; charset=utf-8']],
 ]);
 
-// Every API route has an explicit policy. Unknown routes never reach a handler.
 const apiRoutes = new Map([
   ['/api/auth/signup', { method: 'POST', public: true }],
   ['/api/auth/login', { method: 'POST', public: true }],
-  // Clearing an absent/expired session remains safe and idempotent for guests.
   ['/api/auth/logout', { method: 'POST', public: true }],
   ['/api/auth/session', { method: 'GET', permission: 'account:read' }],
   ['/api/workspaces/student', { method: 'GET', permission: 'workspace:student', workspace: 'student' }],
@@ -43,6 +41,8 @@ const apiRoutes = new Map([
   ['/api/listings/submit', { method: 'POST', permission: 'listings:own' }],
   ['/api/admin/listings', { method: 'GET', permission: 'listings:review' }],
   ['/api/admin/listings/review', { method: 'POST', permission: 'listings:review' }],
+  ['/api/providers/:id/reviews', { method: 'GET', public: true, dynamic: 'providerReviews' }],
+  ['/api/providers/:id/reviews', { method: 'POST', permission: 'reviews:create', dynamic: 'createReview' }],
 ]);
 
 function json(res, status, body) {
@@ -58,11 +58,29 @@ async function readJson(req) {
     if (size <= 8192) chunks.push(chunk);
   }
   if (size > 8192) throw Object.assign(new Error('Request is too large.'), { status: 413 });
-  try {
-    return JSON.parse(Buffer.concat(chunks).toString('utf8'));
-  } catch {
-    throw Object.assign(new Error('Send valid JSON.'), { status: 400 });
+  try { return JSON.parse(Buffer.concat(chunks).toString('utf8')); }
+  catch { throw Object.assign(new Error('Send valid JSON.'), { status: 400 }); }
+}
+
+function providerRoute(path) {
+  const match = path.match(/^\/api\/providers\/([a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12})\/reviews$/);
+  return match ? match[1] : null;
+}
+
+function ratingInput(body) {
+  if (!body || typeof body !== 'object' || Array.isArray(body)
+      || Object.keys(body).some((key) => !['rating', 'text'].includes(key))) {
+    throw Object.assign(new Error('Send only rating and review text.'), { status: 400 });
   }
+  if (!Number.isInteger(body.rating) || body.rating < 1 || body.rating > 5) {
+    throw Object.assign(new Error('Rating must be an integer from 1 to 5.'), { status: 400 });
+  }
+  if (typeof body.text !== 'string') throw Object.assign(new Error('Review must be text.'), { status: 400 });
+  const text = body.text.trim();
+  if (!text || text.length > 2000 || /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/u.test(text)) {
+    throw Object.assign(new Error('Review must contain 1–2000 characters.'), { status: 400 });
+  }
+  return { providerId: body.providerId, rating: body.rating, text };
 }
 
 export async function createApp({ store, origin, secure = false, now = Date.now }) {
@@ -78,7 +96,6 @@ export async function createApp({ store, origin, secure = false, now = Date.now 
     const token = tokens[0].slice(cookieName.length + 1);
     return /^[a-f0-9]{64}$/.test(token) ? token : '';
   };
-  // Unknown emails perform the same password derivation as existing users.
   const dummyHash = await hashPassword(randomBytes(32).toString('hex'));
   const assets = new Map(await Promise.all([...files].map(async ([url, [name, type]]) =>
     [url, { body: await readFile(new URL(`../public/${name}`, import.meta.url)), type }])));
@@ -97,72 +114,49 @@ export async function createApp({ store, origin, secure = false, now = Date.now 
         res.writeHead(200, { 'Content-Type': type });
         return res.end(body);
       }
-      const route = apiRoutes.get(path);
+      const providerId = providerRoute(path);
+      const route = providerId ? { method: req.method === 'GET' ? 'GET' : 'POST', permission: req.method === 'POST' ? 'reviews:create' : null, public: req.method === 'GET' } : apiRoutes.get(path);
       if (!route) return json(res, 404, { error: 'Not found.' });
-      // Resolve the current database role on every protected request. Client
-      // headers, query parameters, bodies and stale browser state are ignored.
       let sessionUser;
       if (route.public !== true) {
         sessionUser = store.sessionUser(tokenFrom(req), now());
         requirePermission(sessionUser, route.permission);
       }
-      if (req.method !== route.method) {
-        res.setHeader('Allow', route.method);
-        return json(res, 405, { error: `Use ${route.method}.` });
-      }
       if (path === '/api/auth/session') return json(res, 200, { user: sessionUser });
-      if (path === '/api/verification') return json(res, 200, {
-        applications: store.applicationsFor(sessionUser.id), verified: store.isVerifiedRepresentative(sessionUser.id),
-      });
-      if (path === '/api/admin/verification') return json(res, 200, {
-        applications: store.pendingApplications(), accounts: { student: 0, representative: 0, admin: 0, ...store.userCounts() },
-      });
+      if (path === '/api/verification') return json(res, 200, { applications: store.applicationsFor(sessionUser.id), verified: store.isVerifiedRepresentative(sessionUser.id) });
+      if (path === '/api/admin/verification') return json(res, 200, { applications: store.pendingApplications(), accounts: { student: 0, representative: 0, admin: 0, ...store.userCounts() } });
       if (path === '/api/listings') return json(res, 200, { listings: store.publishedListings() });
       if (path === '/api/listings/mine') return json(res, 200, { listings: store.listingsFor(sessionUser.id) });
       if (path === '/api/admin/listings') return json(res, 200, { listings: store.pendingListings() });
+      if (providerId && req.method === 'GET') return json(res, 200, store.reviewsFor(providerId));
+      if (providerId && req.method === 'POST') {
+        if (req.headers.origin !== origin) return json(res, 403, { error: 'Request origin is not allowed.' });
+        if (req.headers['content-type']?.split(';')[0].trim().toLowerCase() !== 'application/json') return json(res, 415, { error: 'Use application/json.' });
+        const body = await readJson(req);
+        const input = ratingInput(body);
+        input.providerId = providerId;
+        return json(res, 201, { review: store.submitReview(sessionUser.id, input, now()), summary: store.reviewsFor(providerId) });
+      }
       if (route.workspace) {
         const result = { workspace: route.workspace, user: sessionUser };
-        if (route.workspace === 'admin') {
-          result.accounts = { student: 0, representative: 0, admin: 0, ...store.userCounts() };
-        }
+        if (route.workspace === 'admin') result.accounts = { student: 0, representative: 0, admin: 0, ...store.userCounts() };
         return json(res, 200, result);
       }
-      // Require a configured origin; never trust Host or forwarded headers for CSRF checks.
       if (req.headers.origin !== origin) return json(res, 403, { error: 'Request origin is not allowed.' });
-      if (req.headers['content-type']?.split(';')[0].trim().toLowerCase() !== 'application/json') {
-        return json(res, 415, { error: 'Use application/json.' });
-      }
+      if (req.headers['content-type']?.split(';')[0].trim().toLowerCase() !== 'application/json') return json(res, 415, { error: 'Use application/json.' });
       const body = await readJson(req);
-      if (path === '/api/verification/submit') {
-        return json(res, 201, { application: store.submitApplication(sessionUser.id, applicationInput(body), now()) });
-      }
-      if (path === '/api/admin/verification/review') {
-        return json(res, 200, { application: store.reviewApplication(sessionUser.id, reviewInput(body), now()) });
-      }
-      if (path === '/api/listings/submit') {
-        return json(res, 201, { listing: store.submitListing(sessionUser.id, listingInput(body), now()) });
-      }
-      if (path === '/api/admin/listings/review') {
-        return json(res, 200, { listing: store.reviewListing(sessionUser.id, reviewInput(body), now()) });
-      }
+      if (path === '/api/verification/submit') return json(res, 201, { application: store.submitApplication(sessionUser.id, applicationInput(body), now()) });
+      if (path === '/api/admin/verification/review') return json(res, 200, { application: store.reviewApplication(sessionUser.id, reviewInput(body), now()) });
+      if (path === '/api/listings/submit') return json(res, 201, { listing: store.submitListing(sessionUser.id, listingInput(body), now()) });
+      if (path === '/api/admin/listings/review') return json(res, 200, { listing: store.reviewListing(sessionUser.id, reviewInput(body), now()) });
       if (path === '/api/auth/logout') {
-        store.deleteSession(tokenFrom(req));
-        res.setHeader('Set-Cookie', cookie('', 0));
-        res.writeHead(204);
-        return res.end();
+        store.deleteSession(tokenFrom(req)); res.setHeader('Set-Cookie', cookie('', 0)); res.writeHead(204); return res.end();
       }
       const ipAllowed = store.allowAttempt(`ip:${req.socket.remoteAddress}`, 30, now());
-      if (!ipAllowed) {
-        res.setHeader('Retry-After', '600');
-        return json(res, 429, { error: 'Too many attempts. Try again in 10 minutes.' });
-      }
+      if (!ipAllowed) { res.setHeader('Retry-After', '600'); return json(res, 429, { error: 'Too many attempts. Try again in 10 minutes.' }); }
       let input;
       try { input = credentials(body); } catch (error) { return json(res, 400, { error: error.message }); }
-      if (!store.allowAttempt(`email:${input.email}`, 10, now())) {
-        res.setHeader('Retry-After', '600');
-        return json(res, 429, { error: 'Too many attempts. Try again in 10 minutes.' });
-      }
-      // Bound expensive scrypt work rather than queueing unbounded allocations.
+      if (!store.allowAttempt(`email:${input.email}`, 10, now())) { res.setHeader('Retry-After', '600'); return json(res, 429, { error: 'Too many attempts. Try again in 10 minutes.' }); }
       if (activeHashes >= 2) return json(res, 503, { error: 'Sign-in is busy. Please try again shortly.' });
       activeHashes++;
       let user;
@@ -199,6 +193,5 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   const server = await createApp({ store, origin, secure });
   server.listen(port, process.env.HOST || '127.0.0.1', () => console.log(`TeachWiz listening on ${origin}`));
   const shutdown = () => server.close(() => { store.close(); process.exit(0); });
-  process.once('SIGINT', shutdown);
-  process.once('SIGTERM', shutdown);
+  process.once('SIGINT', shutdown); process.once('SIGTERM', shutdown);
 }
