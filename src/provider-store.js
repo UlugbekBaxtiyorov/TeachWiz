@@ -2,6 +2,18 @@ import { randomUUID } from 'node:crypto';
 
 function fail(status, message) { throw Object.assign(new Error(message), { status }); }
 
+function review(row) {
+  return {
+    id: row.id,
+    providerId: row.provider_id,
+    studentId: row.student_id,
+    studentEmail: row.studentEmail,
+    rating: row.rating,
+    text: row.review_text,
+    createdAt: row.created_at,
+  };
+}
+
 export function providerStore(db) {
   const transaction = (action) => {
     db.exec('BEGIN IMMEDIATE');
@@ -20,6 +32,16 @@ export function providerStore(db) {
     FROM representative_applications WHERE id = ?`).get(id);
   const listing = (id) => db.prepare(`SELECT id, title, description, status, submitted_at AS submittedAt,
     reviewed_at AS reviewedAt, review_reason AS reviewReason FROM listings WHERE id = ?`).get(id);
+
+  const providerExists = (providerId) => db.prepare(`SELECT 1 FROM listings l
+    JOIN users u ON u.id = l.user_id
+    JOIN representative_applications a ON a.user_id = u.id AND a.status = 'approved'
+    WHERE l.id = ? AND l.status = 'approved' AND u.role = 'representative'`).get(providerId);
+
+  const reviewSummary = (providerId) => db.prepare(`SELECT
+      COUNT(*) AS reviewCount,
+      COALESCE(AVG(rating), 0) AS averageRating
+    FROM reviews WHERE provider_id = ?`).get(providerId);
 
   return {
     isVerifiedRepresentative: verified,
@@ -97,11 +119,44 @@ export function providerStore(db) {
       });
     },
     publishedListings() {
-      // Recheck both approvals and the current role at read time; raw role assignment is insufficient.
       return db.prepare(`SELECT l.id, l.title, l.description, a.provider_type AS providerType, a.provider_name AS providerName
         FROM listings l JOIN users u ON u.id = l.user_id
         JOIN representative_applications a ON a.user_id = u.id AND a.status = 'approved'
         WHERE l.status = 'approved' AND u.role = 'representative' ORDER BY l.rowid DESC LIMIT 100`).all();
+    },
+    reviewsFor(providerId) {
+      if (!providerExists(providerId)) fail(404, 'Provider not found.');
+      const summary = reviewSummary(providerId);
+      const reviews = db.prepare(`SELECT r.id, r.provider_id, r.student_id, u.email AS studentEmail,
+          r.rating, r.review_text, r.created_at
+        FROM reviews r JOIN users u ON u.id = r.student_id
+        WHERE r.provider_id = ? ORDER BY r.created_at DESC, r.rowid DESC`).all(providerId).map(review);
+      return {
+        averageRating: Number(Number(summary.averageRating).toFixed(2)),
+        reviewCount: Number(summary.reviewCount),
+        reviews,
+      };
+    },
+    reviewForStudent(providerId, studentId) {
+      const row = db.prepare(`SELECT r.id, r.provider_id, r.student_id, u.email AS studentEmail,
+        r.rating, r.review_text, r.created_at FROM reviews r
+        JOIN users u ON u.id = r.student_id WHERE r.provider_id = ? AND r.student_id = ?`)
+        .get(providerId, studentId);
+      return row ? review(row) : null;
+    },
+    submitReview(studentId, input, now) {
+      return transaction(() => {
+        requireRole(studentId, ['student']);
+        if (!providerExists(input.providerId)) fail(404, 'Provider not found.');
+        if (db.prepare('SELECT 1 FROM reviews WHERE provider_id = ? AND student_id = ?').get(input.providerId, studentId)) {
+          fail(409, 'You have already reviewed this provider.');
+        }
+        const id = randomUUID();
+        db.prepare(`INSERT INTO reviews (id, provider_id, student_id, rating, review_text, created_at)
+          VALUES (?, ?, ?, ?, ?, ?)`).run(id, input.providerId, studentId, input.rating, input.text, now);
+        return review(db.prepare(`SELECT r.id, r.provider_id, r.student_id, u.email AS studentEmail,
+          r.rating, r.review_text, r.created_at FROM reviews r JOIN users u ON u.id = r.student_id WHERE r.id = ?`).get(id));
+      });
     },
   };
 }
