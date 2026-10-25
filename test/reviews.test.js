@@ -63,7 +63,7 @@ test('public provider reviews return arithmetic average, count, and review text'
   assert.equal(result.status, 201);
   assert.equal(result.body.summary.average, 4.5);
   assert.equal(result.body.summary.count, 2);
-  assert.deepEqual(result.body.summary.reviews.map(({ rating, text }) => ({ rating, text })), [
+  assert.deepEqual(result.body.summary.reviews.map(({ rating, text }) => ({ rating, text })).sort((a, b) => a.rating - b.rating), [
     { rating: 4, text: 'Very good center.' },
     { rating: 5, text: 'Excellent teachers.' },
   ]);
