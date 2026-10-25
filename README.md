@@ -91,7 +91,7 @@ This ticket includes a minimal listing submission/moderation flow to enforce the
 
 Unknown input fields, including owner IDs, roles and approval states, are rejected. The session identifies the applicant and reviewer. All new writes use the same Origin, JSON content-type and 8 KiB request-size checks as authentication. Queue refresh loads the next entries after reviews; the UI reports when a queue reaches the 100-entry limit. Use **Refresh status** to reload applications and listings; account access is refreshed when the server reports a role change.
 
-SQLite schema version 2 is applied automatically at startup to fresh and version 1 databases without replacing users, password hashes, sessions or rate limits. Back up the database before upgrading. The previous binary rejects version 2, so rollback requires the matching database backup rather than running old code against the upgraded database.
+SQLite schema version 3 is applied automatically at startup to fresh and version 1/2 databases without replacing users, password hashes, sessions or rate limits. Back up the database before upgrading. The previous binary rejects version 3, so rollback requires the matching database backup rather than running old code against the upgraded database.
 
 ## Security and deployment boundaries
 
@@ -107,3 +107,17 @@ SQLite schema version 2 is applied automatically at startup to fresh and version
 `src/server.js` serves the API and an explicit allowlist of static files. `src/access.js` defines role grants. `src/store.js` owns SQLite schema migrations and account persistence; `src/provider-store.js` handles transactional verification and publication, and `src/verification.js` validates those inputs. `src/password.js` owns credentials and password hashing. `src/create-admin.js` is the local provisioning command.
 
 `public/` contains the responsive home (`/`), search (`/search`) and center profile (`/centers/bright-minds`) pages from [KAN-13](https://teachwiz.atlassian.net/browse/KAN-13). These pages, `/saved`, `/for-centers`, `/login` (`login.html` with `app.js`) and `/account` (`account.html` with `account.js`) share `ui.css` and a self-hosted Manrope font (SIL OFL, `public/fonts/Manrope-OFL.txt`). The account page exposes role-specific workspaces, admin totals and the verification/moderation UI (`verification.js`). `test/` exercises authentication, authorization, verification, publication, competing reviews, migration and UI asset serving. `test-support/` holds the shared HTTP test fixture.
+
+## Subject and keyword search (KAN-10)
+
+`/search` and the home-page catalog use approved data from SQLite. `GET /api/catalog` searches provider names, listing titles, subjects and the standardized IELTS, SAT and Presidential School preparation categories. Matching is case-insensitive (including Cyrillic), normalizes Unicode/spacing and Uzbek apostrophe variants, and requires every search word to match. SQL parameters and literal substring matching keep `%`, `_` and quotes literal. Verification contact details and private review notes are never searchable or returned.
+
+Query parameters: `q` (up to 150 characters), repeatable `category` (`ielts`, `sat`, `presidential_school`, OR within this group), `type` (`tutors`, `centers`, `courses`), `sort` (`relevance`, `newest`), and `page` (1–99999). Different filters combine with AND. Courses includes all listings. Responses contain `listings`, `total`, `page`, `pageSize` (24), and `pages`. Filtering precedes pagination across the entire approved catalog. Relevance prioritizes a matching provider name, then submission time with a stable tie-breaker. Invalid or unknown filters return 400.
+
+`GET /api/catalog/listing?id=<UUID>` and `/listing?id=<UUID>` show a single public listing. Both catalog APIs enforce the same current-role and two-approval publication checks as `/api/listings`; unavailable/private details return 404. The existing `/api/listings` contract remains compatible.
+
+Listings accept optional `subjects` (up to 12 names, 60 characters each) and `preparationCategories` (the three canonical keys). New UI submissions collect subjects; older API clients and migrated listings default to empty arrays. Owners and admins see these fields before review. Schema v3 adds these columns without rewriting existing records. Back up the database before upgrading; older binaries cannot open v3.
+
+The responsive search, cards and details extend the supplied design boards. URLs preserve search state for sharing, reload and Back/Forward; mobile filters expand in place. Results, empty states and errors use live-region announcements, request cancellation prevents stale results, and all user content is rendered as text. The home page now shows real approved listings instead of static ratings and distances.
+
+Run `npm run demo` to view the complete app with synthetic listings and accounts at http://localhost:3113. This uses only in-memory SQLite and never opens the persistent database. Sign in as `student@example.test`, `provider1@example.test` or `admin@example.test` with demo-only password `Teachwiz demo passphrase 123`. Restarting resets the examples.

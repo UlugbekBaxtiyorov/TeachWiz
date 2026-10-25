@@ -18,8 +18,11 @@ export function providerStore(db) {
     contact_details AS contactDetails, evidence, status, submitted_at AS submittedAt,
     reviewed_at AS reviewedAt, review_reason AS reviewReason
     FROM representative_applications WHERE id = ?`).get(id);
-  const listing = (id) => db.prepare(`SELECT id, title, description, status, submitted_at AS submittedAt,
-    reviewed_at AS reviewedAt, review_reason AS reviewReason FROM listings WHERE id = ?`).get(id);
+  const listing = (id) => {
+    const row = db.prepare(`SELECT id, title, description, status, subjects, preparation_categories AS preparationCategories,
+      submitted_at AS submittedAt, reviewed_at AS reviewedAt, review_reason AS reviewReason FROM listings WHERE id = ?`).get(id);
+    return row && { ...row, subjects: JSON.parse(row.subjects), preparationCategories: JSON.parse(row.preparationCategories) };
+  };
 
   return {
     isVerifiedRepresentative: verified,
@@ -73,8 +76,9 @@ export function providerStore(db) {
           fail(403, 'Apply for representative verification before submitting a listing.');
         }
         const id = randomUUID();
-        db.prepare(`INSERT INTO listings (id, user_id, title, description, status, submitted_at)
-          VALUES (?, ?, ?, ?, 'pending', ?)`).run(id, userId, input.title, input.description, now);
+        db.prepare(`INSERT INTO listings (id, user_id, title, description, status, submitted_at, subjects, preparation_categories)
+          VALUES (?, ?, ?, ?, 'pending', ?, ?, ?)`).run(id, userId, input.title, input.description, now,
+          JSON.stringify(input.subjects || []), JSON.stringify(input.preparationCategories || []));
         return { ...listing(id), published: false };
       });
     },

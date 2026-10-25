@@ -280,7 +280,7 @@ test('schema v1 migrates without altering accounts, sessions or rate limits, and
     } finally { store.close(); }
   }
   const migrated = new DatabaseSync(filename);
-  assert.equal(migrated.prepare('PRAGMA user_version').get().user_version, 2);
+  assert.equal(migrated.prepare('PRAGMA user_version').get().user_version, 3);
   assert.equal(migrated.prepare('PRAGMA integrity_check').get().integrity_check, 'ok');
   migrated.close();
 });
