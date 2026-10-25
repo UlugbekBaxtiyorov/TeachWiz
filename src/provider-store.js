@@ -20,6 +20,9 @@ export function providerStore(db) {
     FROM representative_applications WHERE id = ?`).get(id);
   const listing = (id) => db.prepare(`SELECT id, title, description, status, submitted_at AS submittedAt,
     reviewed_at AS reviewedAt, review_reason AS reviewReason FROM listings WHERE id = ?`).get(id);
+  const review = (id) => db.prepare(`SELECT r.id, r.provider_id AS providerId, r.student_id AS studentId,
+    r.rating, r.text, r.created_at AS createdAt, u.email AS studentEmail
+    FROM reviews r JOIN users u ON u.id = r.student_id WHERE r.id = ?`).get(id);
 
   return {
     isVerifiedRepresentative: verified,
@@ -97,11 +100,44 @@ export function providerStore(db) {
       });
     },
     publishedListings() {
-      // Recheck both approvals and the current role at read time; raw role assignment is insufficient.
-      return db.prepare(`SELECT l.id, l.title, l.description, a.provider_type AS providerType, a.provider_name AS providerName
+      return db.prepare(`SELECT l.id, l.user_id AS providerId, l.title, l.description,
+          a.provider_type AS providerType, a.provider_name AS providerName
         FROM listings l JOIN users u ON u.id = l.user_id
         JOIN representative_applications a ON a.user_id = u.id AND a.status = 'approved'
         WHERE l.status = 'approved' AND u.role = 'representative' ORDER BY l.rowid DESC LIMIT 100`).all();
+    },
+    reviewsFor(providerId) {
+      if (!db.prepare("SELECT 1 FROM users u WHERE u.id = ? AND u.role = 'representative' AND EXISTS (SELECT 1 FROM representative_applications a WHERE a.user_id = u.id AND a.status = 'approved')").get(providerId)) {
+        fail(404, 'Provider not found.');
+      }
+      const reviews = db.prepare(`SELECT r.id, r.rating, r.text, r.created_at AS createdAt
+        FROM reviews r WHERE r.provider_id = ? ORDER BY r.created_at DESC, r.id DESC`).all(providerId);
+      const summary = db.prepare(`SELECT COUNT(*) AS count, COALESCE(AVG(rating), 0) AS average
+        FROM reviews WHERE provider_id = ?`).get(providerId);
+      return {
+        average: Number(summary.average),
+        count: Number(summary.count),
+        reviews,
+      };
+    },
+    submitReview(studentId, providerId, input, now) {
+      return transaction(() => {
+        requireRole(studentId, ['student']);
+        if (!db.prepare("SELECT 1 FROM users u WHERE u.id = ? AND u.role = 'representative' AND EXISTS (SELECT 1 FROM representative_applications a WHERE a.user_id = u.id AND a.status = 'approved')").get(providerId)) {
+          fail(404, 'Provider not found.');
+        }
+        try {
+          const id = randomUUID();
+          db.prepare(`INSERT INTO reviews (id, provider_id, student_id, rating, text, created_at)
+            VALUES (?, ?, ?, ?, ?, ?)`).run(id, providerId, studentId, input.rating, input.text, now);
+          return review(id);
+        } catch (error) {
+          if (String(error.message).includes('UNIQUE constraint failed: reviews.provider_id, reviews.student_id')) {
+            fail(409, 'You have already reviewed this provider.');
+          }
+          throw error;
+        }
+      });
     },
   };
 }
