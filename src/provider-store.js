@@ -23,6 +23,15 @@ export function providerStore(db) {
   const review = (id) => db.prepare(`SELECT r.id, r.provider_id AS providerId, r.student_id AS studentId,
     r.rating, r.text, r.created_at AS createdAt, u.email AS studentEmail
     FROM reviews r JOIN users u ON u.id = r.student_id WHERE r.id = ?`).get(id);
+  const resolveProviderId = (identifier) => {
+    if (verified(identifier)) return identifier;
+    const row = db.prepare(`SELECT l.user_id AS providerId FROM listings l
+      JOIN users u ON u.id = l.user_id
+      JOIN representative_applications a ON a.user_id = u.id AND a.status = 'approved'
+      WHERE l.id = ? AND l.status = 'approved' AND u.role = 'representative'`).get(identifier);
+    if (!row) fail(404, 'Provider not found.');
+    return row.providerId;
+  };
 
   return {
     isVerifiedRepresentative: verified,
@@ -100,16 +109,14 @@ export function providerStore(db) {
       });
     },
     publishedListings() {
-      return db.prepare(`SELECT l.id, l.user_id AS providerId, l.title, l.description,
+      return db.prepare(`SELECT l.id, l.title, l.description,
           a.provider_type AS providerType, a.provider_name AS providerName
         FROM listings l JOIN users u ON u.id = l.user_id
         JOIN representative_applications a ON a.user_id = u.id AND a.status = 'approved'
         WHERE l.status = 'approved' AND u.role = 'representative' ORDER BY l.rowid DESC LIMIT 100`).all();
     },
-    reviewsFor(providerId) {
-      if (!db.prepare("SELECT 1 FROM users u WHERE u.id = ? AND u.role = 'representative' AND EXISTS (SELECT 1 FROM representative_applications a WHERE a.user_id = u.id AND a.status = 'approved')").get(providerId)) {
-        fail(404, 'Provider not found.');
-      }
+    reviewsFor(providerIdentifier) {
+      const providerId = resolveProviderId(providerIdentifier);
       const reviews = db.prepare(`SELECT r.id, r.rating, r.text, r.created_at AS createdAt
         FROM reviews r WHERE r.provider_id = ? ORDER BY r.created_at DESC, r.id DESC`).all(providerId);
       const summary = db.prepare(`SELECT COUNT(*) AS count, COALESCE(AVG(rating), 0) AS average
@@ -120,12 +127,10 @@ export function providerStore(db) {
         reviews,
       };
     },
-    submitReview(studentId, providerId, input, now) {
+    submitReview(studentId, providerIdentifier, input, now) {
       return transaction(() => {
         requireRole(studentId, ['student']);
-        if (!db.prepare("SELECT 1 FROM users u WHERE u.id = ? AND u.role = 'representative' AND EXISTS (SELECT 1 FROM representative_applications a WHERE a.user_id = u.id AND a.status = 'approved')").get(providerId)) {
-          fail(404, 'Provider not found.');
-        }
+        const providerId = resolveProviderId(providerIdentifier);
         try {
           const id = randomUUID();
           db.prepare(`INSERT INTO reviews (id, provider_id, student_id, rating, text, created_at)
