@@ -26,8 +26,6 @@ function request(f, providerId, student, body, method = 'POST') {
 function seedProvider(f, name = 'provider') {
   const provider = identity(f, 'representative', name);
   const admin = identity(f, 'admin', `${name}-admin`);
-  const applicationId = randomUUID();
-  const listingId = randomUUID();
   const now = Date.now();
   const db = f.store;
   db.submitApplication(provider.id, {
@@ -38,7 +36,7 @@ function seedProvider(f, name = 'provider') {
   }, now);
   const application = db.applicationsFor(provider.id)[0];
   db.reviewApplication(admin.id, { id: application.id, decision: 'approved', reason: '' }, now + 1);
-  return { provider, admin, applicationId, listingId };
+  return { provider, admin };
 }
 
 async function json(response) {
@@ -131,4 +129,5 @@ test('review endpoint rejects unknown providers and unsupported methods', async 
   });
   assert.equal(response.status, 405);
   assert.equal(response.headers.get('allow'), 'GET, POST');
+  await response.text();
 });
