@@ -19,109 +19,69 @@ const files = new Map([
   ['/app.js', ['app.js', 'text/javascript; charset=utf-8']],
   ['/account.js', ['account.js', 'text/javascript; charset=utf-8']],
   ['/verification.js', ['verification.js', 'text/javascript; charset=utf-8']],
+  ['/center-reviews.js', ['center-reviews.js', 'text/javascript; charset=utf-8']],
   ['/ui.css', ['ui.css', 'text/css; charset=utf-8']],
   ['/fonts/manrope-latin.woff2', ['fonts/manrope-latin.woff2', 'font/woff2']],
   ['/fonts/Manrope-OFL.txt', ['fonts/Manrope-OFL.txt', 'text/plain; charset=utf-8']],
 ]);
 
 const apiRoutes = new Map([
-  ['/api/auth/signup', { method: 'POST', public: true }],
-  ['/api/auth/login', { method: 'POST', public: true }],
-  ['/api/auth/logout', { method: 'POST', public: true }],
-  ['/api/auth/session', { method: 'GET', permission: 'account:read' }],
+  ['/api/auth/signup', { method: 'POST', public: true }], ['/api/auth/login', { method: 'POST', public: true }],
+  ['/api/auth/logout', { method: 'POST', public: true }], ['/api/auth/session', { method: 'GET', permission: 'account:read' }],
   ['/api/workspaces/student', { method: 'GET', permission: 'workspace:student', workspace: 'student' }],
   ['/api/workspaces/representative', { method: 'GET', permission: 'workspace:representative', workspace: 'representative' }],
   ['/api/workspaces/admin', { method: 'GET', permission: 'workspace:admin', workspace: 'admin' }],
-  ['/api/verification', { method: 'GET', permission: 'verification:own' }],
-  ['/api/verification/submit', { method: 'POST', permission: 'verification:own' }],
-  ['/api/admin/verification', { method: 'GET', permission: 'verification:review' }],
-  ['/api/admin/verification/review', { method: 'POST', permission: 'verification:review' }],
-  ['/api/listings', { method: 'GET', public: true }],
-  ['/api/listings/mine', { method: 'GET', permission: 'listings:own' }],
-  ['/api/listings/submit', { method: 'POST', permission: 'listings:own' }],
-  ['/api/admin/listings', { method: 'GET', permission: 'listings:review' }],
+  ['/api/verification', { method: 'GET', permission: 'verification:own' }], ['/api/verification/submit', { method: 'POST', permission: 'verification:own' }],
+  ['/api/admin/verification', { method: 'GET', permission: 'verification:review' }], ['/api/admin/verification/review', { method: 'POST', permission: 'verification:review' }],
+  ['/api/listings', { method: 'GET', public: true }], ['/api/listings/mine', { method: 'GET', permission: 'listings:own' }],
+  ['/api/listings/submit', { method: 'POST', permission: 'listings:own' }], ['/api/admin/listings', { method: 'GET', permission: 'listings:review' }],
   ['/api/admin/listings/review', { method: 'POST', permission: 'listings:review' }],
-  ['/api/providers/:id/reviews', { method: 'GET', public: true, dynamic: 'providerReviews' }],
-  ['/api/providers/:id/reviews', { method: 'POST', permission: 'reviews:create', dynamic: 'createReview' }],
 ]);
 
-function json(res, status, body) {
-  res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify(body));
-}
-
+function json(res, status, body) { res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' }); res.end(JSON.stringify(body)); }
 async function readJson(req) {
-  let size = 0;
-  const chunks = [];
-  for await (const chunk of req) {
-    size += chunk.length;
-    if (size <= 8192) chunks.push(chunk);
-  }
+  let size = 0; const chunks = [];
+  for await (const chunk of req) { size += chunk.length; if (size <= 8192) chunks.push(chunk); }
   if (size > 8192) throw Object.assign(new Error('Request is too large.'), { status: 413 });
-  try { return JSON.parse(Buffer.concat(chunks).toString('utf8')); }
-  catch { throw Object.assign(new Error('Send valid JSON.'), { status: 400 }); }
+  try { return JSON.parse(Buffer.concat(chunks).toString('utf8')); } catch { throw Object.assign(new Error('Send valid JSON.'), { status: 400 }); }
 }
-
 function providerRoute(path) {
   const match = path.match(/^\/api\/providers\/([a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12})\/reviews$/);
   return match ? match[1] : null;
 }
-
 function ratingInput(body) {
-  if (!body || typeof body !== 'object' || Array.isArray(body)
-      || Object.keys(body).some((key) => !['rating', 'text'].includes(key))) {
-    throw Object.assign(new Error('Send only rating and review text.'), { status: 400 });
-  }
-  if (!Number.isInteger(body.rating) || body.rating < 1 || body.rating > 5) {
-    throw Object.assign(new Error('Rating must be an integer from 1 to 5.'), { status: 400 });
-  }
+  if (!body || typeof body !== 'object' || Array.isArray(body) || Object.keys(body).some(key => !['rating', 'text'].includes(key))) throw Object.assign(new Error('Send only rating and review text.'), { status: 400 });
+  if (!Number.isInteger(body.rating) || body.rating < 1 || body.rating > 5) throw Object.assign(new Error('Rating must be an integer from 1 to 5.'), { status: 400 });
   if (typeof body.text !== 'string') throw Object.assign(new Error('Review must be text.'), { status: 400 });
   const text = body.text.trim();
-  if (!text || text.length > 2000 || /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/u.test(text)) {
-    throw Object.assign(new Error('Review must contain 1–2000 characters.'), { status: 400 });
-  }
-  return { providerId: body.providerId, rating: body.rating, text };
+  if (!text || text.length > 2000 || /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/u.test(text)) throw Object.assign(new Error('Review must contain 1–2000 characters.'), { status: 400 });
+  return { rating: body.rating, text };
 }
 
 export async function createApp({ store, origin, secure = false, now = Date.now }) {
   const configured = new URL(origin);
-  if (configured.origin !== origin || !['http:', 'https:'].includes(configured.protocol)
-      || (secure && configured.protocol !== 'https:')) throw new Error('Invalid APP_ORIGIN.');
+  if (configured.origin !== origin || !['http:', 'https:'].includes(configured.protocol) || (secure && configured.protocol !== 'https:')) throw new Error('Invalid APP_ORIGIN.');
   const cookieName = secure ? '__Host-teachwiz_session' : 'teachwiz_session';
   const cookie = (token, age) => `${cookieName}=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${age}${secure ? '; Secure' : ''}`;
-  const tokenFrom = (req) => {
-    const tokens = (req.headers.cookie || '').split(';').map((part) => part.trim())
-      .filter((part) => part.startsWith(`${cookieName}=`));
-    if (tokens.length !== 1) return '';
-    const token = tokens[0].slice(cookieName.length + 1);
-    return /^[a-f0-9]{64}$/.test(token) ? token : '';
-  };
+  const tokenFrom = req => { const tokens = (req.headers.cookie || '').split(';').map(p => p.trim()).filter(p => p.startsWith(`${cookieName}=`)); if (tokens.length !== 1) return ''; const token = tokens[0].slice(cookieName.length + 1); return /^[a-f0-9]{64}$/.test(token) ? token : ''; };
   const dummyHash = await hashPassword(randomBytes(32).toString('hex'));
-  const assets = new Map(await Promise.all([...files].map(async ([url, [name, type]]) =>
-    [url, { body: await readFile(new URL(`../public/${name}`, import.meta.url)), type }])));
+  const assets = new Map(await Promise.all([...files].map(async ([url, [name, type]]) => [url, { body: await readFile(new URL(`../public/${name}`, import.meta.url)), type }])));
   let activeHashes = 0;
 
   return createServer({ requestTimeout: 15_000, headersTimeout: 10_000 }, async (req, res) => {
-    res.setHeader('Cache-Control', 'no-store');
-    res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader('Referrer-Policy', 'no-referrer');
-    res.setHeader('Content-Security-Policy', "default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; connect-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'");
+    res.setHeader('Cache-Control', 'no-store'); res.setHeader('X-Content-Type-Options', 'nosniff'); res.setHeader('Referrer-Policy', 'no-referrer');
+    res.setHeader('Content-Security-Policy', "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'");
     if (secure) res.setHeader('Strict-Transport-Security', 'max-age=31536000');
     try {
       const path = new URL(req.url, origin).pathname;
-      if (req.method === 'GET' && assets.has(path)) {
-        const { body, type } = assets.get(path);
-        res.writeHead(200, { 'Content-Type': type });
-        return res.end(body);
-      }
+      if (req.method === 'GET' && assets.has(path)) { const { body, type } = assets.get(path); res.writeHead(200, { 'Content-Type': type }); return res.end(body); }
       const providerId = providerRoute(path);
-      const route = providerId ? { method: req.method === 'GET' ? 'GET' : 'POST', permission: req.method === 'POST' ? 'reviews:create' : null, public: req.method === 'GET' } : apiRoutes.get(path);
+      let route = apiRoutes.get(path);
+      if (providerId) route = { method: req.method, public: req.method === 'GET', permission: 'reviews:create' };
       if (!route) return json(res, 404, { error: 'Not found.' });
       let sessionUser;
-      if (route.public !== true) {
-        sessionUser = store.sessionUser(tokenFrom(req), now());
-        requirePermission(sessionUser, route.permission);
-      }
+      if (route.public !== true) { sessionUser = store.sessionUser(tokenFrom(req), now()); requirePermission(sessionUser, route.permission); }
+      if (req.method !== route.method) { res.setHeader('Allow', route.method); return json(res, 405, { error: `Use ${route.method}.` }); }
       if (path === '/api/auth/session') return json(res, 200, { user: sessionUser });
       if (path === '/api/verification') return json(res, 200, { applications: store.applicationsFor(sessionUser.id), verified: store.isVerifiedRepresentative(sessionUser.id) });
       if (path === '/api/admin/verification') return json(res, 200, { applications: store.pendingApplications(), accounts: { student: 0, representative: 0, admin: 0, ...store.userCounts() } });
@@ -132,16 +92,10 @@ export async function createApp({ store, origin, secure = false, now = Date.now 
       if (providerId && req.method === 'POST') {
         if (req.headers.origin !== origin) return json(res, 403, { error: 'Request origin is not allowed.' });
         if (req.headers['content-type']?.split(';')[0].trim().toLowerCase() !== 'application/json') return json(res, 415, { error: 'Use application/json.' });
-        const body = await readJson(req);
-        const input = ratingInput(body);
-        input.providerId = providerId;
+        const input = ratingInput(await readJson(req)); input.providerId = providerId;
         return json(res, 201, { review: store.submitReview(sessionUser.id, input, now()), summary: store.reviewsFor(providerId) });
       }
-      if (route.workspace) {
-        const result = { workspace: route.workspace, user: sessionUser };
-        if (route.workspace === 'admin') result.accounts = { student: 0, representative: 0, admin: 0, ...store.userCounts() };
-        return json(res, 200, result);
-      }
+      if (route.workspace) { const result = { workspace: route.workspace, user: sessionUser }; if (route.workspace === 'admin') result.accounts = { student: 0, representative: 0, admin: 0, ...store.userCounts() }; return json(res, 200, result); }
       if (req.headers.origin !== origin) return json(res, 403, { error: 'Request origin is not allowed.' });
       if (req.headers['content-type']?.split(';')[0].trim().toLowerCase() !== 'application/json') return json(res, 415, { error: 'Use application/json.' });
       const body = await readJson(req);
@@ -149,49 +103,22 @@ export async function createApp({ store, origin, secure = false, now = Date.now 
       if (path === '/api/admin/verification/review') return json(res, 200, { application: store.reviewApplication(sessionUser.id, reviewInput(body), now()) });
       if (path === '/api/listings/submit') return json(res, 201, { listing: store.submitListing(sessionUser.id, listingInput(body), now()) });
       if (path === '/api/admin/listings/review') return json(res, 200, { listing: store.reviewListing(sessionUser.id, reviewInput(body), now()) });
-      if (path === '/api/auth/logout') {
-        store.deleteSession(tokenFrom(req)); res.setHeader('Set-Cookie', cookie('', 0)); res.writeHead(204); return res.end();
-      }
-      const ipAllowed = store.allowAttempt(`ip:${req.socket.remoteAddress}`, 30, now());
-      if (!ipAllowed) { res.setHeader('Retry-After', '600'); return json(res, 429, { error: 'Too many attempts. Try again in 10 minutes.' }); }
-      let input;
-      try { input = credentials(body); } catch (error) { return json(res, 400, { error: error.message }); }
+      if (path === '/api/auth/logout') { store.deleteSession(tokenFrom(req)); res.setHeader('Set-Cookie', cookie('', 0)); res.writeHead(204); return res.end(); }
+      const ipAllowed = store.allowAttempt(`ip:${req.socket.remoteAddress}`, 30, now()); if (!ipAllowed) { res.setHeader('Retry-After', '600'); return json(res, 429, { error: 'Too many attempts. Try again in 10 minutes.' }); }
+      let input; try { input = credentials(body); } catch (error) { return json(res, 400, { error: error.message }); }
       if (!store.allowAttempt(`email:${input.email}`, 10, now())) { res.setHeader('Retry-After', '600'); return json(res, 429, { error: 'Too many attempts. Try again in 10 minutes.' }); }
       if (activeHashes >= 2) return json(res, 503, { error: 'Sign-in is busy. Please try again shortly.' });
-      activeHashes++;
-      let user;
-      try {
-        if (path === '/api/auth/signup') {
-          const passwordHash = await hashPassword(input.password);
-          user = store.createUser(input.email, passwordHash, 'student', now());
-          if (!user) return json(res, 409, { error: 'Unable to create an account with these details. Try signing in.' });
-        } else {
-          const found = store.findUser(input.email);
-          const valid = await verifyPassword(input.password, found?.password_hash || dummyHash);
-          if (!found || !valid) return json(res, 401, { error: 'Email or password is incorrect.' });
-          user = { id: found.id, email: found.email, role: found.role };
-        }
-      } finally { activeHashes--; }
-      const token = randomBytes(32).toString('hex');
-      const time = now();
-      store.createSession(token, user.id, time + SESSION_SECONDS * 1000, tokenFrom(req), time);
-      res.setHeader('Set-Cookie', cookie(token, SESSION_SECONDS));
-      return json(res, path.endsWith('signup') ? 201 : 200, { user });
-    } catch (error) {
-      json(res, error.status || 500, { error: error.status ? error.message : 'Something went wrong. Please try again.' });
-    }
+      activeHashes++; let user;
+      try { if (path === '/api/auth/signup') { const passwordHash = await hashPassword(input.password); user = store.createUser(input.email, passwordHash, 'student', now()); if (!user) return json(res, 409, { error: 'Unable to create an account with these details. Try signing in.' }); } else { const found = store.findUser(input.email); const valid = await verifyPassword(input.password, found?.password_hash || dummyHash); if (!found || !valid) return json(res, 401, { error: 'Email or password is incorrect.' }); user = { id: found.id, email: found.email, role: found.role }; } } finally { activeHashes--; }
+      const token = randomBytes(32).toString('hex'); const time = now(); store.createSession(token, user.id, time + SESSION_SECONDS * 1000, tokenFrom(req), time); res.setHeader('Set-Cookie', cookie(token, SESSION_SECONDS)); return json(res, path.endsWith('signup') ? 201 : 200, { user });
+    } catch (error) { json(res, error.status || 500, { error: error.status ? error.message : 'Something went wrong. Please try again.' }); }
   });
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  const port = Number(process.env.PORT || 3000);
-  if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('Invalid PORT.');
-  const secure = process.env.NODE_ENV === 'production';
-  if (secure && !process.env.APP_ORIGIN) throw new Error('APP_ORIGIN is required in production.');
-  const origin = process.env.APP_ORIGIN || `http://localhost:${port}`;
-  const store = openStore(process.env.DATABASE_PATH);
-  const server = await createApp({ store, origin, secure });
+  const port = Number(process.env.PORT || 3000); if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('Invalid PORT.');
+  const secure = process.env.NODE_ENV === 'production'; if (secure && !process.env.APP_ORIGIN) throw new Error('APP_ORIGIN is required in production.');
+  const origin = process.env.APP_ORIGIN || `http://localhost:${port}`; const store = openStore(process.env.DATABASE_PATH); const server = await createApp({ store, origin, secure });
   server.listen(port, process.env.HOST || '127.0.0.1', () => console.log(`TeachWiz listening on ${origin}`));
-  const shutdown = () => server.close(() => { store.close(); process.exit(0); });
-  process.once('SIGINT', shutdown); process.once('SIGTERM', shutdown);
+  const shutdown = () => server.close(() => { store.close(); process.exit(0); }); process.once('SIGINT', shutdown); process.once('SIGTERM', shutdown);
 }
