@@ -71,8 +71,8 @@ async function getProvider() {
   if (!response.ok) throw new Error('Unable to load the center.');
   const data = await response.json();
   const listing = data.listings?.find((item) => item.providerName === 'Bright Minds Center');
-  if (!listing?.providerId) throw new Error('Center provider is unavailable.');
-  providerId = listing.providerId;
+  if (!listing?.id) throw new Error('Center provider is unavailable.');
+  providerId = listing.id;
 }
 
 async function loadReviews() {
