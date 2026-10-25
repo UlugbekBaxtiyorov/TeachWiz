@@ -77,6 +77,18 @@ export function openStore(filename = resolve('data/teachwiz.sqlite')) {
     PRAGMA user_version = 2;
     COMMIT;
   `);
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS reviews (
+      id TEXT PRIMARY KEY,
+      provider_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      student_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      rating INTEGER NOT NULL CHECK (rating BETWEEN 1 AND 5),
+      text TEXT NOT NULL CHECK (length(trim(text)) BETWEEN 1 AND 2000),
+      created_at INTEGER NOT NULL,
+      UNIQUE (provider_id, student_id)
+    ) STRICT;
+    CREATE INDEX IF NOT EXISTS reviews_provider ON reviews(provider_id, created_at DESC);
+  `);
 
   return {
     ...providerStore(db),

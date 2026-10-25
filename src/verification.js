@@ -38,3 +38,9 @@ export function listingInput(body) {
   fields(body, ['title', 'description']);
   return { title: text(body.title, 'Listing title', 120), description: text(body.description, 'Description', 2000) };
 }
+
+export function ratingInput(body) {
+  fields(body, ['rating', 'text']);
+  if (!Number.isInteger(body.rating) || body.rating < 1 || body.rating > 5) fail('Rating must be an integer from 1 to 5.');
+  return { rating: body.rating, text: text(body.text, 'Review', 2000) };
+}

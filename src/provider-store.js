@@ -20,6 +20,18 @@ export function providerStore(db) {
     FROM representative_applications WHERE id = ?`).get(id);
   const listing = (id) => db.prepare(`SELECT id, title, description, status, submitted_at AS submittedAt,
     reviewed_at AS reviewedAt, review_reason AS reviewReason FROM listings WHERE id = ?`).get(id);
+  const review = (id) => db.prepare(`SELECT r.id, r.provider_id AS providerId, r.student_id AS studentId,
+    r.rating, r.text, r.created_at AS createdAt, u.email AS studentEmail
+    FROM reviews r JOIN users u ON u.id = r.student_id WHERE r.id = ?`).get(id);
+  const resolveProviderId = (identifier) => {
+    if (verified(identifier)) return identifier;
+    const row = db.prepare(`SELECT l.user_id AS providerId FROM listings l
+      JOIN users u ON u.id = l.user_id
+      JOIN representative_applications a ON a.user_id = u.id AND a.status = 'approved'
+      WHERE l.id = ? AND l.status = 'approved' AND u.role = 'representative'`).get(identifier);
+    if (!row) fail(404, 'Provider not found.');
+    return row.providerId;
+  };
 
   return {
     isVerifiedRepresentative: verified,
@@ -97,11 +109,40 @@ export function providerStore(db) {
       });
     },
     publishedListings() {
-      // Recheck both approvals and the current role at read time; raw role assignment is insufficient.
-      return db.prepare(`SELECT l.id, l.title, l.description, a.provider_type AS providerType, a.provider_name AS providerName
+      return db.prepare(`SELECT l.id, l.title, l.description,
+          a.provider_type AS providerType, a.provider_name AS providerName
         FROM listings l JOIN users u ON u.id = l.user_id
         JOIN representative_applications a ON a.user_id = u.id AND a.status = 'approved'
         WHERE l.status = 'approved' AND u.role = 'representative' ORDER BY l.rowid DESC LIMIT 100`).all();
+    },
+    reviewsFor(providerIdentifier) {
+      const providerId = resolveProviderId(providerIdentifier);
+      const reviews = db.prepare(`SELECT r.id, r.rating, r.text, r.created_at AS createdAt
+        FROM reviews r WHERE r.provider_id = ? ORDER BY r.created_at DESC, r.id DESC`).all(providerId);
+      const summary = db.prepare(`SELECT COUNT(*) AS count, COALESCE(AVG(rating), 0) AS average
+        FROM reviews WHERE provider_id = ?`).get(providerId);
+      return {
+        average: Number(summary.average),
+        count: Number(summary.count),
+        reviews,
+      };
+    },
+    submitReview(studentId, providerIdentifier, input, now) {
+      return transaction(() => {
+        requireRole(studentId, ['student']);
+        const providerId = resolveProviderId(providerIdentifier);
+        try {
+          const id = randomUUID();
+          db.prepare(`INSERT INTO reviews (id, provider_id, student_id, rating, text, created_at)
+            VALUES (?, ?, ?, ?, ?, ?)`).run(id, providerId, studentId, input.rating, input.text, now);
+          return review(id);
+        } catch (error) {
+          if (String(error.message).includes('UNIQUE constraint failed: reviews.provider_id, reviews.student_id')) {
+            fail(409, 'You have already reviewed this provider.');
+          }
+          throw error;
+        }
+      });
     },
   };
 }
