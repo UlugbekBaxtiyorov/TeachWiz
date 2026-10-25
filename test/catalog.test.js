@@ -101,7 +101,10 @@ test('schema v2 listings migrate with approvals, owners and text intact and empt
   const item = catalogFixture(store).add({ providerName: 'Existing provider' });
   const before = store.publishedListings(); store.close();
   const db = new DatabaseSync(filename);
-  db.exec('ALTER TABLE listings DROP COLUMN subjects; ALTER TABLE listings DROP COLUMN preparation_categories; PRAGMA user_version = 2;');
+  db.exec(`DROP INDEX listings_monthly_fee; DROP TABLE provider_rating_summaries;
+    ALTER TABLE listings DROP COLUMN city; ALTER TABLE listings DROP COLUMN district; ALTER TABLE listings DROP COLUMN skill_level;
+    ALTER TABLE listings DROP COLUMN monthly_fee; ALTER TABLE listings DROP COLUMN instruction_languages; ALTER TABLE listings DROP COLUMN delivery_modes;
+    ALTER TABLE listings DROP COLUMN subjects; ALTER TABLE listings DROP COLUMN preparation_categories; PRAGMA user_version = 2;`);
   db.close();
   for (let pass = 0; pass < 2; pass++) {
     store = openStore(filename);

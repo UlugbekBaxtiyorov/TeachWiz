@@ -17,13 +17,22 @@ const examples = [
   { providerName: 'Aziza Karimova', providerType: 'tutor', title: 'SAT Math with a personal study plan', subjects: ['Math'], preparationCategories: ['sat'], description: 'Individual mathematics lessons with a focus on problem solving and SAT preparation.' },
   { providerName: 'Школа знаний', providerType: 'learning_center', title: 'Математика для начинающих', subjects: ['Математика'], description: 'Занятия по математике с практическими упражнениями и поддержкой преподавателя.' },
 ];
+const filterExamples = [
+  { city: 'Tashkent', district: 'Yunusabad', skillLevel: 'intermediate', monthlyFee: 450000, instructionLanguages: ['uz', 'ru'], deliveryModes: ['in_person'], scoreTotal: 600, reviewCount: 125 },
+  { city: 'Tashkent', district: 'Mirzo Ulugbek', skillLevel: 'all_levels', monthlyFee: 600000, instructionLanguages: ['en', 'ru'], deliveryModes: ['in_person', 'online'], scoreTotal: 423, reviewCount: 90 },
+  { city: 'Tashkent', district: 'Chilanzar', skillLevel: 'beginner', monthlyFee: 520000, instructionLanguages: ['uz', 'en'], deliveryModes: ['online'], scoreTotal: 180, reviewCount: 40 },
+  { city: 'Samarkand', district: 'Registan', skillLevel: 'advanced', monthlyFee: 300000, instructionLanguages: ['en'], deliveryModes: ['online'], scoreTotal: 98, reviewCount: 20 },
+  { city: 'Tashkent', district: 'Yunusabad', skillLevel: 'beginner', monthlyFee: null, instructionLanguages: ['ru'], deliveryModes: ['in_person'], scoreTotal: 0, reviewCount: 0 },
+];
 for (const [index, { providerName, providerType, ...input }] of examples.entries()) {
+  const { scoreTotal, reviewCount, ...filters } = filterExamples[index];
   const user = store.createUser(`provider${index + 1}@example.test`, hash);
   const now = Date.now() - index * 1000;
   const application = store.submitApplication(user.id, { providerName, providerType, contactDetails: 'Demo contact information', evidence: 'Synthetic demonstration only.' }, now);
   store.reviewApplication(admin.id, { id: application.id, decision: 'approved', reason: '' }, now);
-  const listing = store.submitListing(user.id, listingInput(input), now);
+  const listing = store.submitListing(user.id, listingInput({ ...input, ...filters }), now);
   store.reviewListing(admin.id, { id: listing.id, decision: 'approved', reason: '' }, now);
+  store.recordRatingSummary(user.id, { scoreTotal, reviewCount }, now);
 }
 store.createUser('student@example.test', hash);
 const origin = `http://localhost:${port}`;

@@ -1,6 +1,3 @@
-.catalog-intro { display: grid; gap: 8px; }
-.catalog-intro h1 { margin: 0; font-size: 32px; letter-spacing: -.04em; }
-.catalog-intro p { margin: 0; }
 .live-catalog .search-bar .field { min-width: 0; }
 .live-catalog .search-bar .field:first-child { flex: 3; }
 .catalog-toolbar, .active-filters { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
@@ -16,9 +13,20 @@
 .catalog-filters legend { margin: 0 0 10px; font-size: 13px; font-weight: 800; }
 .catalog-filters .check { min-height: 44px; }
 .catalog-filters .field-hint { margin: 0; }
+.catalog-filters .field { margin-bottom: 8px; }
+.catalog-filters .field input, .catalog-filters select { width: 100%; min-width: 0; font-size: 12px; }
+.fee-range { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
+.fee-range input { padding: 0 8px; }
+.filter-shortcuts { display: none; gap: 8px; }
+.catalog-rating { color: var(--star); font-weight: 700; }
+.listing-facts { margin: 0; display: grid; gap: 14px; }
+.listing-facts > div { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 16px; font-size: 14px; }
+.listing-facts dt { color: var(--muted); }
+.listing-facts dd { margin: 0; font-weight: 700; overflow-wrap: anywhere; }
+.catalog-card .price { font-size: 16px; }
 .filter-toggle, .filter-close { display: none; }
 .live-catalog .results { min-width: 0; }
-.live-catalog .results-head h2 { margin: 0; font-size: 20px; }
+.live-catalog .results-head h1 { margin: 0; font-size: 20px; }
 .live-catalog .results-head { flex-wrap: wrap; }
 .live-catalog .status { margin: 0; font-size: 12px; }
 .catalog-card { padding: 22px; }
@@ -47,16 +55,20 @@
 @media (max-width: 1000px) {
   .catalog-layout { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'filters' 'results'; }
   .filter-toggle { display: inline-flex; }
+  .filter-shortcuts { display: flex; flex-wrap: wrap; }
   .filter-close { display: inline-flex; font-size: 12px; }
   .catalog-filters { display: none; }
   .catalog-filters.is-open { display: flex; }
   .catalog-card { flex-direction: column; align-items: stretch; padding: 20px; }
 }
 @media (max-width: 640px) {
-  .catalog-intro h1 { font-size: 28px; }
+  .live-catalog .search-bar .field:first-child { flex: 1 0 100%; }
+  .live-catalog .search-bar .field:nth-child(2) { flex: 1 1 140px; }
   .catalog-card { padding: 16px; }
   .catalog-card .avatar { width: 52px; height: 52px; font-size: 18px; }
   .catalog-card h3 { font-size: 16px; }
   .listing-page { padding: 24px 16px; }
   .listing-detail h1 { font-size: 26px; }
+  .listing-facts > div { grid-template-columns: 1fr; gap: 4px; }
+  .catalog-card .card-price { min-width: 0; }
 }
