@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -10,23 +10,23 @@
 <body>
   <header class="site-header">
     <a class="brand" href="/" aria-label="TeachWiz home"><span class="brand-mark" aria-hidden="true">T</span>Teachwiz</a>
-    <nav class="site-nav" aria-label="Main"><a href="/search?type=tutors">Tutors</a><a href="/search?type=centers">Centers</a><a href="/search?type=courses">Courses</a><a href="/for-centers">For centers</a></nav>
+    <nav class="site-nav" aria-label="Main"><a href="/search?type=tutors"><span data-i18n="nav_tutors">Tutors</span></a><a href="/search?type=centers"><span data-i18n="nav_centers">Centers</span></a><a href="/search?type=courses"><span data-i18n="nav_courses">Courses</span></a><a href="/for-centers"><span data-i18n="nav_for_centers">For centers</span></a></nav>
     <div class="header-actions">
       <div class="lang" role="group" aria-label="Language"><button type="button" aria-pressed="false">UZ</button><button type="button" aria-pressed="false">RU</button><button type="button" aria-pressed="true">EN</button></div>
-      <a class="btn login-link" href="/login">Log in</a>
+      <a class="btn login-link" href="/login"><span data-i18n="btn_login">Log in</span></a>
     </div>
   </header>
   <main class="home">
-    <h1>Find the right tutor or learning center</h1>
+    <h1 data-i18n="home_heading">Find the right tutor or learning center</h1>
     <form class="home-search" action="/search" method="get" role="search">
-      <label class="field">What do you want to learn?<input name="q" placeholder="Subject, skill or course"></label>
-      <button class="btn btn-soft" type="submit" name="near" value="me">Use my location</button>
+      <label class="field"><span data-i18n="home_search_label">What do you want to learn?</span><input name="q" placeholder="Subject, skill or course" data-i18n-placeholder="home_search_placeholder"></label>
+      <button class="btn btn-soft" type="submit" name="near" value="me" data-i18n="btn_use_location">Use my location</button>
       <button class="btn btn-primary" type="submit"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg> Search</button>
     </form>
     <nav class="categories" aria-label="Popular subjects">
       <a href="/search?q=Math">Math</a><a href="/search?q=English">English</a><a href="/search?q=IELTS">IELTS</a><a href="/search?q=Programming">Programming</a><a href="/search?q=Kids">Kids</a><a href="/search?q=Exam+prep">Exam prep</a>
     </nav>
-    <h2>Top rated near you</h2>
+    <h2 data-i18n="home_top_rated">Top rated near you</h2>
     <div class="top-rated">
       <article class="panel card stacked">
         <div class="card-main"><div class="avatar" aria-hidden="true">BM</div>
@@ -35,6 +35,6 @@
       </article>
     </div>
   </main>
-  <nav class="tabbar" aria-label="App"><a href="/" aria-current="page">Browse</a><a href="/search">Map</a><a href="/saved">Saved</a><a href="/account">Account</a></nav>
+  <nav class="tabbar" aria-label="App"><a href="/" aria-current="page"><span data-i18n="nav_browse">Browse</span></a><a href="/search"><span data-i18n="nav_map">Map</span></a><a href="/saved"><span data-i18n="nav_saved">Saved</span></a><a href="/account"><span data-i18n="nav_account">Account</span></a></nav>
 </body>
 </html>
