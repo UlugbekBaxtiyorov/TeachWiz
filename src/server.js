@@ -1,4 +1,4 @@
-import { createServer } from 'node:http';
+﻿import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { randomBytes } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
@@ -23,6 +23,10 @@ const files = new Map([
   ['/ui.css', ['ui.css', 'text/css; charset=utf-8']],
   ['/fonts/manrope-latin.woff2', ['fonts/manrope-latin.woff2', 'font/woff2']],
   ['/fonts/Manrope-OFL.txt', ['fonts/Manrope-OFL.txt', 'text/plain; charset=utf-8']],
+  ['/i18n.js', ['i18n.js', 'text/javascript; charset=utf-8']],
+  ['/locales/en.json', ['locales/en.json', 'application/json; charset=utf-8']],
+  ['/locales/ru.json', ['locales/ru.json', 'application/json; charset=utf-8']],
+  ['/locales/uz.json', ['locales/uz.json', 'application/json; charset=utf-8']],
 ]);
 
 // Every API route has an explicit policy. Unknown routes never reach a handler.
