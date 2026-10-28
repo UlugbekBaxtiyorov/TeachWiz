@@ -72,3 +72,13 @@
   .listing-facts > div { grid-template-columns: 1fr; gap: 4px; }
   .catalog-card .card-price { min-width: 0; }
 }
+/* KAN-11: listing profile editing and public profile details */
+.listing-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.listing-editor { margin-top: 4px; }
+.listing-editor .review-actions { padding-top: 0; }
+.listing-contact-fields { flex-direction: column; align-items: stretch; gap: 14px; }
+.listing-contact-fields .verification-field { width: 100%; }
+.listing-profile-facts { margin: 0; display: grid; gap: 4px; font-size: 13px; }
+.listing-profile-facts > div { display: flex; gap: 8px; flex-wrap: wrap; }
+.listing-profile-facts dt { color: var(--muted); min-width: 72px; }
+.listing-profile-facts dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }

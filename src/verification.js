@@ -1,4 +1,5 @@
 import { preparationCategories, skillLevels, instructionLanguages, deliveryModes } from '../public/catalog-options.js';
+import { profileFields, profileInput, fee } from './listing-profile.js';
 
 const fail = (message) => { throw Object.assign(new Error(message), { status: 400 }); };
 
@@ -28,16 +29,24 @@ export function applicationInput(body) {
   };
 }
 
+function submissionId(value) {
+  const id = text(value, 'Submission ID', 36);
+  if (!/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/.test(id)) fail('Invalid submission ID.');
+  return id;
+}
+
 export function reviewInput(body) {
   fields(body, ['id', 'decision', 'reason']);
-  const id = text(body.id, 'Submission ID', 36);
-  if (!/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/.test(id)) fail('Invalid submission ID.');
+  const id = submissionId(body.id);
   if (!['approved', 'rejected'].includes(body.decision)) fail('Choose approved or rejected.');
   return { id, decision: body.decision, reason: text(body.reason, 'Review note', 1000, body.decision === 'rejected') };
 }
 
+const listingFields = ['title', 'description', 'subjects', 'preparationCategories', 'city', 'district', 'skillLevel', 'monthlyFee',
+  'instructionLanguages', 'deliveryModes', ...profileFields];
+
 export function listingInput(body) {
-  fields(body, ['title', 'description', 'subjects', 'preparationCategories', 'city', 'district', 'skillLevel', 'monthlyFee', 'instructionLanguages', 'deliveryModes']);
+  fields(body, listingFields);
   const subjects = body.subjects ?? [];
   const categories = body.preparationCategories ?? [];
   if (!Array.isArray(subjects) || subjects.length > 12) fail('Supply up to 12 subjects.');
@@ -58,15 +67,22 @@ export function listingInput(body) {
   if (district && !city) fail('Supply a city for the district.');
   const skillLevel = body.skillLevel ?? '';
   if (typeof skillLevel !== 'string' || (skillLevel && !Object.hasOwn(skillLevels, skillLevel))) fail('Choose a supported skill level.');
-  const monthlyFee = body.monthlyFee ?? null;
-  if (monthlyFee !== null && (!Number.isSafeInteger(monthlyFee) || monthlyFee < 0 || monthlyFee > 100000000)) fail('Monthly fee must be a whole UZS amount from 0 to 100000000, or null.');
+  const monthlyFee = fee(body.monthlyFee, 'Monthly fee');
   return {
     title: text(body.title, 'Listing title', 120), description: text(body.description, 'Description', 2000),
     subjects: [...uniqueSubjects.values()], preparationCategories: [...new Set(categories)],
     city, district, skillLevel, monthlyFee,
     instructionLanguages: choices(body.instructionLanguages, instructionLanguages, 'instruction languages'),
     deliveryModes: choices(body.deliveryModes, deliveryModes, 'delivery modes'),
+    ...profileInput(body),
   };
+}
+
+// KAN-11: an edit carries the listing's own UUID plus the complete replacement content.
+export function listingUpdateInput(body) {
+  fields(body, ['id', ...listingFields]);
+  const { id, ...details } = body;
+  return { id: submissionId(id), ...listingInput(details) };
 }
 
 export function ratingInput(body) {

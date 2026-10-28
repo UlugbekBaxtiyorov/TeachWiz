@@ -84,14 +84,15 @@ This ticket includes a minimal listing submission/moderation flow to enforce the
 | GET | `/api/admin/verification` | Admin: oldest 100 pending applications |
 | POST | `/api/admin/verification/review` | Admin: `{ "id": "application UUID", "decision": "approved", "reason": "Optional note" }`; `rejected` requires a nonblank reason |
 | GET | `/api/listings/mine` | Student/representative: own listings, decision notes and actual `published` state |
-| POST | `/api/listings/submit` | Student/representative with an application: `{ "title": "Algebra lessons", "description": "Lesson details" }`; always private and pending |
+| POST | `/api/listings/submit` | Student/representative with an application: `{ "title": "Algebra lessons", "description": "Lesson details" }` plus the optional catalog and profile fields below; always private and pending |
+| POST | `/api/listings/update` | Owner only: `{ "id": "listing UUID", ...full replacement content }`; returns the listing to `pending` (KAN-11) |
 | GET | `/api/admin/listings` | Admin: oldest 100 pending listings, including representative verification status |
 | POST | `/api/admin/listings/review` | Admin: same review input as applications, using a listing UUID |
 | GET | `/api/listings` | Public: latest 100 publishable listings with provider name/type and title/description only |
 
 Unknown input fields, including owner IDs, roles and approval states, are rejected. The session identifies the applicant and reviewer. All new writes use the same Origin, JSON content-type and 8 KiB request-size checks as authentication. Queue refresh loads the next entries after reviews; the UI reports when a queue reaches the 100-entry limit. Use **Refresh status** to reload applications and listings; account access is refreshed when the server reports a role change.
 
-SQLite schema version 4 is applied automatically at startup to fresh and version 1/2/3 databases without replacing users, password hashes, sessions or rate limits. Back up the database before upgrading. The previous binary rejects version 4, so rollback requires the matching database backup rather than running old code against the upgraded database.
+SQLite schema version 5 is applied automatically at startup to fresh and version 1/2/3/4 databases without replacing users, password hashes, sessions or rate limits. Back up the database before upgrading. The previous binary rejects version 5, so rollback requires the matching database backup rather than running old code against the upgraded database.
 
 ## Security and deployment boundaries
 
@@ -133,3 +134,11 @@ Schema v4 adds location, level, monthly fee, instruction languages and delivery 
 Ratings are provider-level aggregates of 1–5 star reviews. Search uses the unrounded average; unrated providers have `rating: null`, `reviewCount: 0` and do not satisfy a rating threshold. Every review accepted by `POST /api/providers/{id}/reviews` (MVP-09) updates `provider_rating_summaries` in the same transaction, so catalog ratings always equal the stored reviews. `store.recordRatingSummary(userId, {scoreTotal, reviewCount})` remains a trusted backend seam (used by tests and the demo) and has no HTTP write route. Representatives cannot set rating/approval fields through listing submission. Demo aggregates are synthetic, not real reviews.
 
 The design-aligned sidebar, mobile quick filters, removable filter chips, cards and public listing details display the same stored data. Use `npm run demo` to inspect both tickets together with authentication, verification and admin review. The search PR depends on #21; the filters PR depends on the search PR.
+
+## Listing management and profiles (KAN-11 / MVP-07, REQ-10 and REQ-12)
+
+Representatives describe each listing fully from the account page: title, description, subjects, level, languages and delivery modes (KAN-10/KAN-15), plus the public profile added here: `monthlyFee` and an optional `lessonFee` (whole UZS), a free-text `scheduleSummary` (up to 300 characters), a street `address` (up to 200 characters, shown with the city and district), and public contact details for direct leads: `contactPhone` (7–15 digits with an optional `+`; spaces, dashes and parentheses are stripped) and `contactTelegram` (a Telegram username; `@name`, `t.me/name` and `https://t.me/name` are all accepted and stored as the bare username). Every profile field is optional and defaults to empty or `null`; invalid values return 400 and nothing is stored.
+
+`POST /api/listings/update` takes `{ "id": "listing UUID", ...the same fields as /api/listings/submit }` and replaces the listing's content. Only the owner can edit (any other account receives 404, so listings cannot be enumerated), using the existing `listings:own` permission, Origin, JSON and 8 KiB checks. **Every edit returns the listing to `pending`**, clears the previous decision and note, records `updatedAt`, and removes a published listing from `/api/catalog` until an admin approves the new version. Students therefore never see content an admin has not reviewed. Rejected listings are edited and resubmitted the same way; the review note stays visible until the resubmission. Edits do not change the listing's position in the admin queue.
+
+The account page shows each listing's profile, an **Edit listing** form prefilled with the stored values, and the last edit date. Admin review cards display the same profile fields. Public catalog responses and `/listing?id=` include the pricing, schedule, address and contact fields, because they exist to be shown to students; verification contact details and evidence remain private. The legacy `/api/listings` feed is unchanged. Schema v5 adds the profile columns and `updated_at` to `listings`; migrated rows have empty profiles.

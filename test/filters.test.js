@@ -111,6 +111,8 @@ test('schema v3 migrates existing search metadata without inventing price, locat
   let store = openStore(filename); const item = catalogFixture(store).add({ subjects: ['Math'], preparationCategories: ['sat'] }); store.close();
   const db = new DatabaseSync(filename);
   db.exec(`DROP INDEX listings_monthly_fee; DROP TABLE provider_rating_summaries;
+    ALTER TABLE listings DROP COLUMN lesson_fee; ALTER TABLE listings DROP COLUMN schedule_summary; ALTER TABLE listings DROP COLUMN contact_phone;
+    ALTER TABLE listings DROP COLUMN contact_telegram; ALTER TABLE listings DROP COLUMN address; ALTER TABLE listings DROP COLUMN updated_at;
     ALTER TABLE listings DROP COLUMN city; ALTER TABLE listings DROP COLUMN district; ALTER TABLE listings DROP COLUMN skill_level;
     ALTER TABLE listings DROP COLUMN monthly_fee; ALTER TABLE listings DROP COLUMN instruction_languages; ALTER TABLE listings DROP COLUMN delivery_modes;
     PRAGMA user_version = 3;`); db.close();

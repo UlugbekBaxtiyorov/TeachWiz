@@ -56,6 +56,8 @@ export function catalogStore(db) {
     a.provider_type AS providerType, a.provider_name AS providerName,
     l.city, l.district, l.skill_level AS skillLevel, l.monthly_fee AS monthlyFee,
     l.instruction_languages AS instructionLanguages, l.delivery_modes AS deliveryModes,
+    l.lesson_fee AS lessonFee, l.schedule_summary AS scheduleSummary, l.address,
+    l.contact_phone AS contactPhone, l.contact_telegram AS contactTelegram,
     ${rating} AS rating, coalesce(r.review_count, 0) AS reviewCount`;
   const decode = (row) => ({ ...row, subjects: JSON.parse(row.subjects), preparationCategories: JSON.parse(row.preparationCategories),
     instructionLanguages: JSON.parse(row.instructionLanguages), deliveryModes: JSON.parse(row.deliveryModes) });
