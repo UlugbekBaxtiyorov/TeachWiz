@@ -85,12 +85,17 @@ export function catalogStore(db) {
       const clause = `${from} WHERE ${where.join(' AND ')}`;
       const { total } = db.prepare(`SELECT count(*) AS total ${clause}`).get(...values);
       const pageSize = 24;
-      const rankings = {
-        relevance: q ? `CASE WHEN search_text(a.provider_name) = ? THEN 0 WHEN instr(search_text(a.provider_name), ?) > 0 THEN 1 ELSE 2 END,` : '',
-        newest: '', price_asc: 'l.monthly_fee IS NULL, l.monthly_fee ASC,', price_desc: 'l.monthly_fee IS NULL, l.monthly_fee DESC,',
-        rating: `${rating} IS NULL, ${rating} DESC,`,
+      // KAN-16: fee and rating sorts break ties on the listing UUID, so equal values keep one stable
+      // order across requests and pages. Missing fees and unrated providers always sort last.
+      const relevance = q ? 'CASE WHEN search_text(a.provider_name) = ? THEN 0 WHEN instr(search_text(a.provider_name), ?) > 0 THEN 1 ELSE 2 END, ' : '';
+      const orders = {
+        relevance: `${relevance}l.submitted_at DESC, l.rowid DESC`,
+        newest: 'l.submitted_at DESC, l.rowid DESC',
+        price_asc: 'l.monthly_fee IS NULL, l.monthly_fee ASC, l.id ASC',
+        price_desc: 'l.monthly_fee IS NULL, l.monthly_fee DESC, l.id ASC',
+        rating: `${rating} IS NULL, ${rating} DESC, l.id ASC`,
       };
-      const rows = db.prepare(`SELECT ${select} ${clause} ORDER BY ${rankings[sort]} l.submitted_at DESC, l.rowid DESC LIMIT ? OFFSET ?`)
+      const rows = db.prepare(`SELECT ${select} ${clause} ORDER BY ${orders[sort]} LIMIT ? OFFSET ?`)
         .all(...values, ...(sort === 'relevance' && q ? [q, q] : []), pageSize, (page - 1) * pageSize);
       // Facet values come only from publishable listings, independently of other filters.
       const locations = db.prepare(`SELECT min(l.city) AS city, min(l.district) AS district ${from}
