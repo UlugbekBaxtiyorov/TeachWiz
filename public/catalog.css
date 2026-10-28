@@ -82,3 +82,12 @@
 .listing-profile-facts > div { display: flex; gap: 8px; flex-wrap: wrap; }
 .listing-profile-facts dt { color: var(--muted); min-width: 72px; }
 .listing-profile-facts dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+/* MVP-08: one-tap Telegram and call actions */
+.catalog-card .contact .btn { font-size: 13px; }
+.listing-contact-actions { max-width: 420px; }
+.listing-contact-bar { position: sticky; bottom: 0; z-index: 1; padding: 12px 0; margin-top: 4px; background: var(--page); border-top: 1px solid var(--line); }
+.listing-contact-bar .btn { min-height: 48px; }
+.contact-bar .muted { margin: 0; align-self: center; }
+@media (min-width: 1001px) {
+  .listing-contact-bar { display: none; }
+}

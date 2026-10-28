@@ -12,6 +12,26 @@ export function node(tag, text, className) {
   return element;
 }
 
+// MVP-08 / REQ-11: one-tap lead actions that work for signed-out visitors. The server stores
+// contact values normalized (digits with an optional +, bare Telegram username), so the hrefs are safe.
+export function contactActions(item, className = 'contact') {
+  const actions = node('div', '', className);
+  if (item.contactTelegram) {
+    const telegram = node('a', 'Telegram', 'btn btn-primary');
+    telegram.href = `https://t.me/${encodeURIComponent(item.contactTelegram)}`;
+    telegram.target = '_blank'; telegram.rel = 'noopener noreferrer';
+    telegram.setAttribute('aria-label', `Chat with ${item.providerName} on Telegram`);
+    actions.append(telegram);
+  }
+  if (item.contactPhone) {
+    const call = node('a', 'Call', 'btn');
+    call.href = `tel:${item.contactPhone}`;
+    call.setAttribute('aria-label', `Call ${item.providerName} on ${item.contactPhone}`);
+    actions.append(call);
+  }
+  return actions.childElementCount ? actions : null;
+}
+
 export function listingCard(item) {
   const card = node('article', '', 'panel card catalog-card');
   const main = node('div', '', 'card-main');
@@ -33,9 +53,11 @@ export function listingCard(item) {
   if (item.deliveryModes.length) tags.append(node('span', item.deliveryModes.map((key) => deliveryModes[key]).join(' + '), 'tag'));
   info.append(tags);
   main.append(avatar, info); card.append(main);
-  const action = node('a', 'View listing', 'btn btn-primary'); action.href = link.href;
+  const leads = contactActions(item);
+  const action = node('a', 'View listing', leads ? 'btn' : 'btn btn-primary'); action.href = link.href;
   const price = node('div', '', 'card-price'); price.append(node('div', feeText(item.monthlyFee), item.monthlyFee == null ? 'price-note' : 'price'));
   if (item.lessonFee != null) price.append(node('div', lessonFeeText(item.lessonFee), 'price-note'));
+  if (leads) price.append(leads);
   price.append(action);
   card.append(price);
   return card;
@@ -71,9 +93,17 @@ export function listingDetails(item) {
     ['Skill level', skillLevels[item.skillLevel] || 'Not provided'],
     ['Instruction languages', item.instructionLanguages.map((key) => instructionLanguages[key]).join(', ') || 'Not provided'],
   ]);
-  facts('Contact', [
+  const contact = facts('Contact', [
     ['Phone', item.contactPhone || 'Not provided'],
     ['Telegram', item.contactTelegram ? `@${item.contactTelegram}` : 'Not provided'],
   ]);
+  const leads = contactActions(item, 'contact listing-contact-actions');
+  if (leads) {
+    contact.append(node('p', 'No account needed: tap to open a Telegram chat or dial the number on your phone.', 'muted'), leads);
+    // A second copy stays reachable at the bottom of the screen on phones, matching the design boards' contact bar.
+    const bar = contactActions(item, 'contact listing-contact-bar');
+    bar.setAttribute('aria-label', `Contact ${item.providerName}`);
+    fragment.append(bar);
+  } else contact.append(node('p', 'This provider has not added direct contact details yet.', 'muted'));
   return fragment;
 }
