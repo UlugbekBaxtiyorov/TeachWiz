@@ -32,7 +32,7 @@ printf '%s' "$admin_password" | npm run admin:create -- admin@example.com
 unset admin_password
 ```
 
-Use 15–128 characters. The command fails for an existing email and never changes its password or role. There are no seeded credentials. This creates an account; it does not verify ownership of the email address.
+Use 8–128 characters. The command fails for an existing email and never changes its password or role. There are no seeded credentials. This creates an account; it does not verify ownership of the email address.
 
 ## API
 
@@ -130,6 +130,6 @@ Only an explicitly entered `monthlyFee` is used for price filtering; course/hour
 
 Schema v4 adds location, level, monthly fee, instruction languages and delivery modes to listings, plus `provider_rating_summaries`. Legacy rows retain unknown/empty values instead of invented defaults. All new fields are visible in representative submissions and admin review; they do not bypass publication checks. Optional API fields preserve compatibility with earlier clients; new UI submissions require subjects, a level and at least one language/mode.
 
-Ratings are provider-level aggregates of 1–5 star reviews. Search uses the unrounded average; unrated providers have `rating: null`, `reviewCount: 0` and do not satisfy a rating threshold. The existing codebase has no review submission/moderation service: `store.recordRatingSummary(userId, {scoreTotal, reviewCount})` is a trusted backend integration seam for that service. It has no HTTP write route. Representatives cannot set rating/approval fields through listing submission. Demo aggregates are synthetic, not real reviews.
+Ratings are provider-level aggregates of 1–5 star reviews. Search uses the unrounded average; unrated providers have `rating: null`, `reviewCount: 0` and do not satisfy a rating threshold. Every review accepted by `POST /api/providers/{id}/reviews` (MVP-09) updates `provider_rating_summaries` in the same transaction, so catalog ratings always equal the stored reviews. `store.recordRatingSummary(userId, {scoreTotal, reviewCount})` remains a trusted backend seam (used by tests and the demo) and has no HTTP write route. Representatives cannot set rating/approval fields through listing submission. Demo aggregates are synthetic, not real reviews.
 
 The design-aligned sidebar, mobile quick filters, removable filter chips, cards and public listing details display the same stored data. Use `npm run demo` to inspect both tickets together with authentication, verification and admin review. The search PR depends on #21; the filters PR depends on the search PR.

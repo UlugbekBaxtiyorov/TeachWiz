@@ -1,11 +1,11 @@
-import { createServer } from 'node:http';
+﻿import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { randomBytes } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 import { openStore } from './store.js';
 import { credentials, hashPassword, verifyPassword } from './password.js';
 import { requirePermission } from './access.js';
-import { applicationInput, reviewInput, listingInput } from './verification.js';
+import { applicationInput, reviewInput, listingInput, ratingInput } from './verification.js';
 import { catalogQuery } from './catalog.js';
 
 const SESSION_SECONDS = 86_400;
@@ -26,9 +26,14 @@ const files = new Map([
   ['/app.js', ['app.js', 'text/javascript; charset=utf-8']],
   ['/account.js', ['account.js', 'text/javascript; charset=utf-8']],
   ['/verification.js', ['verification.js', 'text/javascript; charset=utf-8']],
+  ['/center-reviews.js', ['center-reviews.js', 'text/javascript; charset=utf-8']],
   ['/ui.css', ['ui.css', 'text/css; charset=utf-8']],
   ['/fonts/manrope-latin.woff2', ['fonts/manrope-latin.woff2', 'font/woff2']],
   ['/fonts/Manrope-OFL.txt', ['fonts/Manrope-OFL.txt', 'text/plain; charset=utf-8']],
+  ['/i18n.js', ['i18n.js', 'text/javascript; charset=utf-8']],
+  ['/locales/en.json', ['locales/en.json', 'application/json; charset=utf-8']],
+  ['/locales/ru.json', ['locales/ru.json', 'application/json; charset=utf-8']],
+  ['/locales/uz.json', ['locales/uz.json', 'application/json; charset=utf-8']],
 ]);
 
 // Every API route has an explicit policy. Unknown routes never reach a handler.
@@ -107,7 +112,10 @@ export async function createApp({ store, origin, secure = false, now = Date.now 
         res.writeHead(200, { 'Content-Type': type });
         return res.end(body);
       }
-      const route = apiRoutes.get(path);
+      const providerMatch = path.match(/^\/api\/providers\/([0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12})\/reviews$/i);
+      const route = providerMatch
+        ? { method: req.method === 'GET' ? 'GET' : 'POST', public: req.method === 'GET' ? true : false, permission: req.method === 'GET' ? undefined : 'reviews:create' }
+        : apiRoutes.get(path);
       if (!route) return json(res, 404, { error: 'Not found.' });
       // Resolve the current database role on every protected request. Client
       // headers, query parameters, bodies and stale browser state are ignored.
@@ -116,9 +124,16 @@ export async function createApp({ store, origin, secure = false, now = Date.now 
         sessionUser = store.sessionUser(tokenFrom(req), now());
         requirePermission(sessionUser, route.permission);
       }
-      if (req.method !== route.method) {
+      if (!providerMatch && req.method !== route.method) {
         res.setHeader('Allow', route.method);
         return json(res, 405, { error: `Use ${route.method}.` });
+      }
+      if (providerMatch && !['GET', 'POST'].includes(req.method)) {
+        res.setHeader('Allow', 'GET, POST');
+        return json(res, 405, { error: 'Use GET or POST.' });
+      }
+      if (providerMatch && req.method === 'GET') {
+        return json(res, 200, { reviews: store.reviewsFor(providerMatch[1]) });
       }
       if (path === '/api/auth/session') return json(res, 200, { user: sessionUser });
       if (path === '/api/verification') return json(res, 200, {
@@ -148,6 +163,10 @@ export async function createApp({ store, origin, secure = false, now = Date.now 
         return json(res, 415, { error: 'Use application/json.' });
       }
       const body = await readJson(req);
+      if (providerMatch) {
+        const review = store.submitReview(sessionUser.id, providerMatch[1], ratingInput(body), now());
+        return json(res, 201, { review, summary: store.reviewsFor(providerMatch[1]) });
+      }
       if (path === '/api/verification/submit') {
         return json(res, 201, { application: store.submitApplication(sessionUser.id, applicationInput(body), now()) });
       }

@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -12,16 +12,16 @@
 <body>
   <header class="site-header">
     <a class="brand" href="/" aria-label="TeachWiz home"><span class="brand-mark" aria-hidden="true">T</span>Teachwiz</a>
-    <nav class="site-nav" aria-label="Main"><a href="/search?type=tutors">Tutors</a><a href="/search?type=centers">Centers</a><a href="/search?type=courses">Courses</a><a href="/for-centers">For centers</a></nav>
+    <nav class="site-nav" aria-label="Main"><a href="/search?type=tutors"><span data-i18n="nav_tutors">Tutors</span></a><a href="/search?type=centers"><span data-i18n="nav_centers">Centers</span></a><a href="/search?type=courses"><span data-i18n="nav_courses">Courses</span></a><a href="/for-centers"><span data-i18n="nav_for_centers">For centers</span></a></nav>
     <div class="header-actions">
       <div class="lang" role="group" aria-label="Language"><button type="button" aria-pressed="false">UZ</button><button type="button" aria-pressed="false">RU</button><button type="button" aria-pressed="true">EN</button></div>
-      <a class="btn login-link" href="/login">Log in</a>
+      <a class="btn login-link" href="/login"><span data-i18n="btn_login">Log in</span></a>
     </div>
   </header>
   <main class="home" data-catalog="home">
-    <h1>Find the right tutor or learning center</h1>
+    <h1 data-i18n="home_heading">Find the right tutor or learning center</h1>
     <form class="home-search" action="/search" method="get" role="search">
-      <label class="field">What do you want to learn?<input name="q" placeholder="Subject, skill or course"></label>
+      <label class="field"><span data-i18n="home_search_label">What do you want to learn?</span><input name="q" placeholder="Subject, skill or course" data-i18n-placeholder="home_search_placeholder"></label>
       <a class="btn btn-soft" href="/search">Browse all</a>
       <button class="btn btn-primary" type="submit"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg> Search</button>
     </form>
@@ -33,6 +33,6 @@
     <div class="top-rated" id="catalog-list"></div>
     <noscript><p class="panel">Enable JavaScript to view the live catalog.</p></noscript>
   </main>
-  <nav class="tabbar" aria-label="App"><a href="/" aria-current="page">Browse</a><a href="/search">Search</a><a href="/saved">Saved</a><a href="/account">Account</a></nav>
+  <nav class="tabbar" aria-label="App"><a href="/" aria-current="page"><span data-i18n="nav_browse">Browse</span></a><a href="/search">Search</a><a href="/saved"><span data-i18n="nav_saved">Saved</span></a><a href="/account"><span data-i18n="nav_account">Account</span></a></nav>
 </body>
 </html>

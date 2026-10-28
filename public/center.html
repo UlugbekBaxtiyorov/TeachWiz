@@ -21,16 +21,31 @@
     <div class="center-body">
       <div>
         <h1>Bright Minds Center</h1>
-        <div class="rating center-meta"><b>★ 4.8</b> <small>(126 reviews)</small> · <span class="verified">Verified</span></div>
+        <div class="rating center-meta"><b>★ <span id="center-rating">—</span></b> <small>(<span id="center-review-count">0</span> reviews)</small> · <span class="verified">Verified</span></div>
         <div class="tags"><span class="tag">Uzbek</span><span class="tag">Russian</span><span class="tag">In-person</span></div>
       </div>
       <section class="panel"><h2>About</h2><p>[Center description: subjects, approach and results.]</p></section>
       <section class="panel"><h2>Pricing</h2><div class="price-row"><span>Per lesson</span><b>60 000 UZS</b></div><div class="price-row"><span>Monthly equivalent</span><b class="accent">450 000 UZS</b></div></section>
       <section class="panel"><h2>Schedule</h2><p>Mon · Wed · Fri, 16:00–19:00<br>Address: [Street, district, Tashkent] · 1.2 km</p></section>
       <section class="panel"><h2>Teachers</h2><p>[Teacher name] · [Qualification, years of experience]</p></section>
-      <section class="panel"><h2>Reviews</h2><div class="rating"><b>★ 5.0</b> <small>(1 reviews)</small></div><p>[Student review text]</p><button class="btn" type="button">Write a review (1 per center)</button></section>
+      <section class="panel">
+        <h2>Reviews</h2>
+        <div class="rating"><b>★ <span id="review-rating">—</span></b> <small>(<span id="review-count">0</span> reviews)</small></div>
+        <div id="review-list" class="stack" aria-live="polite"><p class="muted">Loading reviews…</p></div>
+        <div id="review-editor" class="stack" hidden>
+          <label class="field">Rating
+            <span id="review-stars" class="tags" role="group" aria-label="Rating from 1 to 5 stars"></span>
+          </label>
+          <label class="field">Your review
+            <textarea id="review-text" maxlength="2000" rows="5" required></textarea>
+          </label>
+          <button id="review-submit" class="btn btn-primary" type="button">Submit review</button>
+          <p id="review-status" class="status" role="status"></p>
+        </div>
+      </section>
     </div>
     <div class="contact-bar"><button class="btn btn-primary" type="button">Telegram</button><button class="btn" type="button">Call</button></div>
   </main>
+  <script src="/center-reviews.js" defer></script>
 </body>
 </html>

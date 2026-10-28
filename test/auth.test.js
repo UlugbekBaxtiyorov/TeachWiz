@@ -83,6 +83,25 @@ test('rejects invalid input and client-controlled roles', async (t) => {
   assert.equal(f.store.findUser(account().email), undefined);
 });
 
+test('signup and login accept 8–128 Unicode characters and reject passwords outside those bounds', async (t) => {
+  const f = await fixture(t);
+  for (const invalid of ['x'.repeat(7), 'x'.repeat(129), '🔑'.repeat(7), '🔑'.repeat(129)]) {
+    for (const route of ['signup', 'login']) {
+      const response = await f.post(route, { email: 'invalid@example.test', password: invalid });
+      assert.equal(response.status, 400);
+      assert.deepEqual(await response.json(), { error: 'Use a password with 8 to 128 characters.' });
+    }
+  }
+  assert.equal(f.store.findUser('invalid@example.test'), undefined);
+  for (const [index, value] of ['Eight!14', '🔑'.repeat(8), 'x'.repeat(128), '🔑'.repeat(128)].entries()) {
+    const input = { email: `boundary${index}@example.test`, password: value };
+    assert.equal((await f.post('signup', input)).status, 201);
+    const login = await f.post('login', input);
+    assert.equal(login.status, 200);
+    assert.equal((await f.session(cookieFrom(login))).status, 200);
+  }
+});
+
 test('CSRF checks protect all mutations, including logout; malformed requests fail safely', async (t) => {
   const f = await fixture(t);
   const signup = await f.post('signup', account());
@@ -156,13 +175,14 @@ test('pre-provisioned admins can log in; provisioning never promotes an existing
   await f.post('signup', account());
   await assert.rejects(provisionAdmin(f.store, account().email, password), /already exists/);
   assert.equal(f.store.findUser(account().email).role, 'student');
+  const adminPassword = 'Admin!14';
   const cli = spawnSync(process.execPath, ['src/create-admin.js', 'admin@example.test'], {
     cwd: new URL('..', import.meta.url), env: { ...process.env, DATABASE_PATH: f.filename },
-    input: password + '\n', encoding: 'utf8',
+    input: adminPassword + '\n', encoding: 'utf8',
   });
   assert.equal(cli.status, 0, cli.stderr);
-  assert.ok(!cli.stdout.includes(password));
-  const login = await f.post('login', account('admin@example.test'));
+  assert.ok(!cli.stdout.includes(adminPassword));
+  const login = await f.post('login', { email: 'admin@example.test', password: adminPassword });
   assert.equal(login.status, 200);
   assert.equal((await login.json()).user.role, 'admin');
 });

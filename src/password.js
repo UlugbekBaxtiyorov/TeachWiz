@@ -13,9 +13,9 @@ export function credentials(body) {
   if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     throw new Error('Enter a valid email address.');
   }
-  if (typeof body.password !== 'string' || [...body.password].length < 15
+  if (typeof body.password !== 'string' || [...body.password].length < 8
       || [...body.password].length > 128) {
-    throw new Error('Use a password with 15 to 128 characters.');
+    throw new Error('Use a password with 8 to 128 characters.');
   }
   return { email, password: body.password };
 }
