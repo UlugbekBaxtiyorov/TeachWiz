@@ -36,11 +36,9 @@ const files = new Map([
   ['/locales/uz.json', ['locales/uz.json', 'application/json; charset=utf-8']],
 ]);
 
-// Every API route has an explicit policy. Unknown routes never reach a handler.
 const apiRoutes = new Map([
   ['/api/auth/signup', { method: 'POST', public: true }],
   ['/api/auth/login', { method: 'POST', public: true }],
-  // Clearing an absent/expired session remains safe and idempotent for guests.
   ['/api/auth/logout', { method: 'POST', public: true }],
   ['/api/auth/session', { method: 'GET', permission: 'account:read' }],
   ['/api/workspaces/student', { method: 'GET', permission: 'workspace:student', workspace: 'student' }],
@@ -93,7 +91,6 @@ export async function createApp({ store, origin, secure = false, now = Date.now 
     const token = tokens[0].slice(cookieName.length + 1);
     return /^[a-f0-9]{64}$/.test(token) ? token : '';
   };
-  // Unknown emails perform the same password derivation as existing users.
   const dummyHash = await hashPassword(randomBytes(32).toString('hex'));
   const assets = new Map(await Promise.all([...files].map(async ([url, [name, type]]) =>
     [url, { body: await readFile(new URL(`../public/${name}`, import.meta.url)), type }])));
@@ -110,6 +107,14 @@ export async function createApp({ store, origin, secure = false, now = Date.now 
       const path = url.pathname;
       if (req.method === 'GET' && assets.has(path)) {
         const { body, type } = assets.get(path);
+        if (type.startsWith('text/html;')) {
+          const html = body.toString('utf8');
+          const localizedHtml = html.includes('src="/i18n.js"')
+            ? html
+            : html.replace('</head>', '  <script type="module" src="/i18n.js"></script>\n</head>');
+          res.writeHead(200, { 'Content-Type': type });
+          return res.end(localizedHtml);
+        }
         res.writeHead(200, { 'Content-Type': type });
         return res.end(body);
       }
@@ -118,8 +123,6 @@ export async function createApp({ store, origin, secure = false, now = Date.now 
         ? { method: req.method === 'GET' ? 'GET' : 'POST', public: req.method === 'GET' ? true : false, permission: req.method === 'GET' ? undefined : 'reviews:create' }
         : apiRoutes.get(path);
       if (!route) return json(res, 404, { error: 'Not found.' });
-      // Resolve the current database role on every protected request. Client
-      // headers, query parameters, bodies and stale browser state are ignored.
       let sessionUser;
       if (route.public !== true) {
         sessionUser = store.sessionUser(tokenFrom(req), now());
@@ -158,7 +161,6 @@ export async function createApp({ store, origin, secure = false, now = Date.now 
         }
         return json(res, 200, result);
       }
-      // Require a configured origin; never trust Host or forwarded headers for CSRF checks.
       if (req.headers.origin !== origin) return json(res, 403, { error: 'Request origin is not allowed.' });
       if (req.headers['content-type']?.split(';')[0].trim().toLowerCase() !== 'application/json') {
         return json(res, 415, { error: 'Use application/json.' });
@@ -200,7 +202,6 @@ export async function createApp({ store, origin, secure = false, now = Date.now 
         res.setHeader('Retry-After', '600');
         return json(res, 429, { error: 'Too many attempts. Try again in 10 minutes.' });
       }
-      // Bound expensive scrypt work rather than queueing unbounded allocations.
       if (activeHashes >= 2) return json(res, 503, { error: 'Sign-in is busy. Please try again shortly.' });
       activeHashes++;
       let user;
