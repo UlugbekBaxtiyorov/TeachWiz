@@ -18,11 +18,16 @@ const examples = [
   { providerName: 'Школа знаний', providerType: 'learning_center', title: 'Математика для начинающих', subjects: ['Математика'], description: 'Занятия по математике с практическими упражнениями и поддержкой преподавателя.' },
 ];
 const filterExamples = [
-  { city: 'Tashkent', district: 'Yunusabad', skillLevel: 'intermediate', monthlyFee: 450000, instructionLanguages: ['uz', 'ru'], deliveryModes: ['in_person'], scoreTotal: 600, reviewCount: 125 },
-  { city: 'Tashkent', district: 'Mirzo Ulugbek', skillLevel: 'all_levels', monthlyFee: 600000, instructionLanguages: ['en', 'ru'], deliveryModes: ['in_person', 'online'], scoreTotal: 423, reviewCount: 90 },
-  { city: 'Tashkent', district: 'Chilanzar', skillLevel: 'beginner', monthlyFee: 520000, instructionLanguages: ['uz', 'en'], deliveryModes: ['online'], scoreTotal: 180, reviewCount: 40 },
-  { city: 'Samarkand', district: 'Registan', skillLevel: 'advanced', monthlyFee: 300000, instructionLanguages: ['en'], deliveryModes: ['online'], scoreTotal: 98, reviewCount: 20 },
-  { city: 'Tashkent', district: 'Yunusabad', skillLevel: 'beginner', monthlyFee: null, instructionLanguages: ['ru'], deliveryModes: ['in_person'], scoreTotal: 0, reviewCount: 0 },
+  { city: 'Tashkent', district: 'Yunusabad', skillLevel: 'intermediate', monthlyFee: 450000, instructionLanguages: ['uz', 'ru'], deliveryModes: ['in_person'], scoreTotal: 600, reviewCount: 125,
+    lessonFee: 60000, scheduleSummary: 'Mon · Wed · Fri, 16:00–19:00', address: '12 Amir Temur Avenue, 2nd floor', contactPhone: '+998 90 123 45 67', contactTelegram: '@brightminds_demo' },
+  { city: 'Tashkent', district: 'Mirzo Ulugbek', skillLevel: 'all_levels', monthlyFee: 600000, instructionLanguages: ['en', 'ru'], deliveryModes: ['in_person', 'online'], scoreTotal: 423, reviewCount: 90,
+    lessonFee: null, scheduleSummary: 'Weekdays 09:00–20:00, Sat 10:00–15:00', address: '5 Buyuk Ipak Yuli', contactPhone: '+998 71 200 00 00', contactTelegram: 'linguahub_demo' },
+  { city: 'Tashkent', district: 'Chilanzar', skillLevel: 'beginner', monthlyFee: 520000, instructionLanguages: ['uz', 'en'], deliveryModes: ['online'], scoreTotal: 180, reviewCount: 40,
+    lessonFee: 75000, scheduleSummary: 'Tue · Thu, 18:00–20:00 (online)', address: '', contactPhone: '', contactTelegram: 'codegarden_demo' },
+  { city: 'Samarkand', district: 'Registan', skillLevel: 'advanced', monthlyFee: 300000, instructionLanguages: ['en'], deliveryModes: ['online'], scoreTotal: 98, reviewCount: 20,
+    lessonFee: 50000, scheduleSummary: 'By appointment', address: '', contactPhone: '+998 93 555 44 33', contactTelegram: '' },
+  { city: 'Tashkent', district: 'Yunusabad', skillLevel: 'beginner', monthlyFee: null, instructionLanguages: ['ru'], deliveryModes: ['in_person'], scoreTotal: 0, reviewCount: 0,
+    lessonFee: 40000, scheduleSummary: 'Сб · Вс, 11:00–14:00', address: 'ул. Бабура, 7', contactPhone: '+998 97 777 11 22', contactTelegram: '' },
 ];
 for (const [index, { providerName, providerType, ...input }] of examples.entries()) {
   const { scoreTotal, reviewCount, ...filters } = filterExamples[index];

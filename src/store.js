@@ -13,7 +13,7 @@ export function openStore(filename = resolve('data/teachwiz.sqlite')) {
   if (filename !== ':memory:') chmodSync(filename, 0o600);
   db.exec('PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;');
   const version = db.prepare('PRAGMA user_version').get().user_version;
-  if (version > 4) {
+  if (version > 5) {
     db.close();
     throw new Error('Database schema is newer than this application.');
   }
@@ -116,6 +116,19 @@ export function openStore(filename = resolve('data/teachwiz.sqlite')) {
     ) STRICT;
     CREATE INDEX listings_monthly_fee ON listings(monthly_fee) WHERE status = 'approved';
     PRAGMA user_version = 4;
+    COMMIT;
+  `);
+
+  // KAN-11: public listing profile (pricing, schedule, contact details, address) and edit tracking.
+  if (version < 5) db.exec(`
+    BEGIN IMMEDIATE;
+    ALTER TABLE listings ADD COLUMN lesson_fee INTEGER CHECK (lesson_fee BETWEEN 0 AND 100000000);
+    ALTER TABLE listings ADD COLUMN schedule_summary TEXT NOT NULL DEFAULT '';
+    ALTER TABLE listings ADD COLUMN contact_phone TEXT NOT NULL DEFAULT '';
+    ALTER TABLE listings ADD COLUMN contact_telegram TEXT NOT NULL DEFAULT '';
+    ALTER TABLE listings ADD COLUMN address TEXT NOT NULL DEFAULT '';
+    ALTER TABLE listings ADD COLUMN updated_at INTEGER;
+    PRAGMA user_version = 5;
     COMMIT;
   `);
 

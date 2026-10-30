@@ -235,6 +235,37 @@ export async function loadWorkflows(role, controls) {
     const label = listing.published ? 'Published' : listing.status === 'rejected' ? 'Changes requested · Private' : listing.status === 'approved' ? 'Approved · Private' : 'In review · Private';
     card.append(providerHeading(listing, listing.title, label, listing.published ? 'approved' : listing.status === 'rejected' ? 'rejected' : 'pending'), listingMetadata(listing), node('p', listing.description, 'submitted-text'));
     if (listing.reviewReason) card.append(reviewNote(listing.reviewReason));
+    if (listing.updatedAt) card.append(node('p', `Last edited ${dateLabel(listing.updatedAt)}`, 'field-hint'));
+    // KAN-11: owners edit in place; every saved edit goes back to review and stays private until approved again.
+    const actions = node('div', '', 'listing-actions');
+    const edit = node('button', 'Edit listing', 'btn'); edit.type = 'button'; edit.setAttribute('aria-expanded', 'false');
+    actions.append(edit); card.append(actions);
+    let editor;
+    edit.addEventListener('click', () => {
+      if (!editor) {
+        editor = node('form', '', 'panel verification-form listing-editor');
+        editor.setAttribute('aria-label', `Edit ${listing.title}`);
+        editor.append(node('h4', 'Edit listing'));
+        field(editor, 'Listing title', 'title', 'input', 120, listing.title);
+        field(editor, 'Listing description', 'description', 'textarea', 2000, listing.description, 'Describe what you teach and who the lessons are for.');
+        addListingFields(editor, listing);
+        const footer = node('div', '', 'form-footer');
+        const cancel = node('button', 'Cancel', 'btn'); cancel.type = 'button';
+        cancel.addEventListener('click', () => { editor.hidden = true; edit.setAttribute('aria-expanded', 'false'); edit.focus(); });
+        const buttons = node('div', '', 'review-actions'); buttons.append(cancel, button('Save and send for review'));
+        footer.append(node('p', listing.published ? 'Saving removes the listing from search until an admin approves the new version.' : 'Saving sends the new version for review. It stays private until approved.', 'field-hint'), buttons);
+        editor.append(footer);
+        editor.addEventListener('submit', (event) => {
+          event.preventDefault();
+          // Read the values before run() disables the inputs; disabled fields are excluded from FormData.
+          const values = { id: listing.id, ...listingValues(editor) };
+          run(() => api('/api/listings/update', values), 'Listing updated and sent for review. It stays private until approved.');
+        });
+        card.append(editor);
+      } else editor.hidden = !editor.hidden;
+      edit.setAttribute('aria-expanded', String(!editor.hidden));
+      if (!editor.hidden) editor.querySelector('input, textarea')?.focus();
+    });
     listings.append(card);
   }
   const form = node('form', '', 'panel verification-form');
@@ -244,7 +275,7 @@ export async function loadWorkflows(role, controls) {
   field(form, 'Listing description', 'description', 'textarea', 2000, '', 'Describe what you teach and who the lessons are for.');
   addListingFields(form);
   const footer = node('div', '', 'form-footer');
-  footer.append(node('p', 'Your listing stays private until approved.', 'field-hint'), button('Submit listing for review'));
+  footer.append(node('p', 'Your listing stays private until approved. You can edit it any time; edits are reviewed again.', 'field-hint'), button('Submit listing for review'));
   form.append(footer);
   form.addEventListener('submit', (event) => {
     event.preventDefault();

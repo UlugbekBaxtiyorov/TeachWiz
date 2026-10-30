@@ -22,6 +22,8 @@ export function providerStore(db) {
     const row = db.prepare(`SELECT id, title, description, status, subjects, preparation_categories AS preparationCategories,
       city, district, skill_level AS skillLevel, monthly_fee AS monthlyFee,
       instruction_languages AS instructionLanguages, delivery_modes AS deliveryModes,
+      lesson_fee AS lessonFee, schedule_summary AS scheduleSummary, contact_phone AS contactPhone,
+      contact_telegram AS contactTelegram, address, updated_at AS updatedAt,
       submitted_at AS submittedAt, reviewed_at AS reviewedAt, review_reason AS reviewReason FROM listings WHERE id = ?`).get(id);
     return row && { ...row, subjects: JSON.parse(row.subjects), preparationCategories: JSON.parse(row.preparationCategories),
       instructionLanguages: JSON.parse(row.instructionLanguages), deliveryModes: JSON.parse(row.deliveryModes) };
@@ -92,12 +94,33 @@ export function providerStore(db) {
         }
         const id = randomUUID();
         db.prepare(`INSERT INTO listings (id, user_id, title, description, status, submitted_at, subjects, preparation_categories,
-          city, district, skill_level, monthly_fee, instruction_languages, delivery_modes)
-          VALUES (?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(id, userId, input.title, input.description, now,
+          city, district, skill_level, monthly_fee, instruction_languages, delivery_modes,
+          lesson_fee, schedule_summary, contact_phone, contact_telegram, address)
+          VALUES (?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(id, userId, input.title, input.description, now,
           JSON.stringify(input.subjects || []), JSON.stringify(input.preparationCategories || []),
           input.city || '', input.district || '', input.skillLevel || '', input.monthlyFee ?? null,
-          JSON.stringify(input.instructionLanguages || []), JSON.stringify(input.deliveryModes || []));
+          JSON.stringify(input.instructionLanguages || []), JSON.stringify(input.deliveryModes || []),
+          input.lessonFee ?? null, input.scheduleSummary || '', input.contactPhone || '', input.contactTelegram || '', input.address || '');
         return { ...listing(id), published: false };
+      });
+    },
+    // KAN-11: owners replace the whole listing. Every edit returns it to the review queue, so changed
+    // content is never public before an admin has approved exactly that version.
+    updateListing(userId, input, now) {
+      return transaction(() => {
+        requireRole(userId, ['student', 'representative']);
+        const row = db.prepare('SELECT user_id FROM listings WHERE id = ?').get(input.id);
+        // Other accounts learn nothing about listings they do not own.
+        if (!row || row.user_id !== userId) fail(404, 'Listing not found.');
+        db.prepare(`UPDATE listings SET title = ?, description = ?, subjects = ?, preparation_categories = ?,
+          city = ?, district = ?, skill_level = ?, monthly_fee = ?, instruction_languages = ?, delivery_modes = ?,
+          lesson_fee = ?, schedule_summary = ?, contact_phone = ?, contact_telegram = ?, address = ?,
+          status = 'pending', reviewed_by = NULL, reviewed_at = NULL, review_reason = '', updated_at = ? WHERE id = ?`)
+          .run(input.title, input.description, JSON.stringify(input.subjects), JSON.stringify(input.preparationCategories),
+            input.city, input.district, input.skillLevel, input.monthlyFee, JSON.stringify(input.instructionLanguages),
+            JSON.stringify(input.deliveryModes), input.lessonFee, input.scheduleSummary, input.contactPhone,
+            input.contactTelegram, input.address, now, input.id);
+        return { ...listing(input.id), published: false };
       });
     },
     pendingListings() {

@@ -75,6 +75,30 @@ async function getProvider() {
   providerId = listing.id;
 }
 
+// MVP-08: the profile's contact bar opens a Telegram chat or dials the listed number; no sign-in needed.
+async function loadContactActions() {
+  const note = document.querySelector('#center-contact-note');
+  try {
+    const response = await fetch(`/api/catalog/listing?id=${encodeURIComponent(providerId)}`);
+    if (!response.ok) throw new Error('Contact details are unavailable right now.');
+    const { listing } = await response.json();
+    const telegram = document.querySelector('#center-telegram');
+    const call = document.querySelector('#center-call');
+    if (listing.contactTelegram) {
+      telegram.href = `https://t.me/${encodeURIComponent(listing.contactTelegram)}`;
+      telegram.hidden = false;
+    }
+    if (listing.contactPhone) {
+      call.href = `tel:${listing.contactPhone}`;
+      call.hidden = false;
+    }
+    if (listing.contactTelegram || listing.contactPhone) note.remove();
+    else note.textContent = 'This center has not added direct contact details yet.';
+  } catch (error) {
+    note.textContent = error.message;
+  }
+}
+
 async function loadReviews() {
   const response = await fetch(`/api/providers/${providerId}/reviews`);
   if (!response.ok) throw new Error('Unable to load reviews.');
@@ -129,7 +153,7 @@ renderStars();
 (async () => {
   try {
     await getProvider();
-    await loadReviews();
+    await Promise.all([loadReviews(), loadContactActions()]);
     await enableStudentEditor();
   } catch (error) {
     listEl.replaceChildren();
@@ -137,5 +161,6 @@ renderStars();
     message.className = 'muted';
     message.textContent = error.message;
     listEl.append(message);
+    document.querySelector('#center-contact-note').textContent = 'Contact details are unavailable right now.';
   }
 })();

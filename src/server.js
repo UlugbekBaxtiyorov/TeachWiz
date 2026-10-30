@@ -5,7 +5,7 @@ import { pathToFileURL } from 'node:url';
 import { openStore } from './store.js';
 import { credentials, hashPassword, verifyPassword } from './password.js';
 import { requirePermission } from './access.js';
-import { applicationInput, reviewInput, listingInput, ratingInput } from './verification.js';
+import { applicationInput, reviewInput, listingInput, listingUpdateInput, ratingInput } from './verification.js';
 import { catalogQuery } from './catalog.js';
 
 const SESSION_SECONDS = 86_400;
@@ -55,6 +55,7 @@ const apiRoutes = new Map([
   ['/api/catalog/listing', { method: 'GET', public: true }],
   ['/api/listings/mine', { method: 'GET', permission: 'listings:own' }],
   ['/api/listings/submit', { method: 'POST', permission: 'listings:own' }],
+  ['/api/listings/update', { method: 'POST', permission: 'listings:own' }],
   ['/api/admin/listings', { method: 'GET', permission: 'listings:review' }],
   ['/api/admin/listings/review', { method: 'POST', permission: 'listings:review' }],
 ]);
@@ -175,6 +176,9 @@ export async function createApp({ store, origin, secure = false, now = Date.now 
       }
       if (path === '/api/listings/submit') {
         return json(res, 201, { listing: store.submitListing(sessionUser.id, listingInput(body), now()) });
+      }
+      if (path === '/api/listings/update') {
+        return json(res, 200, { listing: store.updateListing(sessionUser.id, listingUpdateInput(body), now()) });
       }
       if (path === '/api/admin/listings/review') {
         return json(res, 200, { listing: store.reviewListing(sessionUser.id, reviewInput(body), now()) });

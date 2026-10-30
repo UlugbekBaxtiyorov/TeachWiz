@@ -84,14 +84,15 @@ This ticket includes a minimal listing submission/moderation flow to enforce the
 | GET | `/api/admin/verification` | Admin: oldest 100 pending applications |
 | POST | `/api/admin/verification/review` | Admin: `{ "id": "application UUID", "decision": "approved", "reason": "Optional note" }`; `rejected` requires a nonblank reason |
 | GET | `/api/listings/mine` | Student/representative: own listings, decision notes and actual `published` state |
-| POST | `/api/listings/submit` | Student/representative with an application: `{ "title": "Algebra lessons", "description": "Lesson details" }`; always private and pending |
+| POST | `/api/listings/submit` | Student/representative with an application: `{ "title": "Algebra lessons", "description": "Lesson details" }` plus the optional catalog and profile fields below; always private and pending |
+| POST | `/api/listings/update` | Owner only: `{ "id": "listing UUID", ...full replacement content }`; returns the listing to `pending` (KAN-11) |
 | GET | `/api/admin/listings` | Admin: oldest 100 pending listings, including representative verification status |
 | POST | `/api/admin/listings/review` | Admin: same review input as applications, using a listing UUID |
 | GET | `/api/listings` | Public: latest 100 publishable listings with provider name/type and title/description only |
 
 Unknown input fields, including owner IDs, roles and approval states, are rejected. The session identifies the applicant and reviewer. All new writes use the same Origin, JSON content-type and 8 KiB request-size checks as authentication. Queue refresh loads the next entries after reviews; the UI reports when a queue reaches the 100-entry limit. Use **Refresh status** to reload applications and listings; account access is refreshed when the server reports a role change.
 
-SQLite schema version 4 is applied automatically at startup to fresh and version 1/2/3 databases without replacing users, password hashes, sessions or rate limits. Back up the database before upgrading. The previous binary rejects version 4, so rollback requires the matching database backup rather than running old code against the upgraded database.
+SQLite schema version 5 is applied automatically at startup to fresh and version 1/2/3/4 databases without replacing users, password hashes, sessions or rate limits. Back up the database before upgrading. The previous binary rejects version 5, so rollback requires the matching database backup rather than running old code against the upgraded database.
 
 ## Security and deployment boundaries
 
@@ -126,10 +127,30 @@ Run `npm run demo` to view the complete app with synthetic listings and accounts
 
 The same `/api/catalog` endpoint accepts `city` and `district` (exact, case-insensitive, up to 80 characters), repeatable `level` (`beginner`, `intermediate`, `advanced`, `all_levels`), `language` (`uz`, `ru`, `en`) and `mode` (`in_person`, `online`), inclusive `minFee` / `maxFee` (whole UZS, 0–100000000), and `minRating` (0–5, up to two decimal places). Values inside a repeated group use OR; groups combine with AND and keyword search. An `all_levels` listing matches each skill level. City/district options are derived only from currently published listings; changing city clears the selected district.
 
-Only an explicitly entered `monthlyFee` is used for price filtering; course/hourly/per-lesson fees are never converted. A zero fee is valid. Missing fees are `null`, excluded by any price bound and sorted last. The additional sort values are `price_asc`, `price_desc` and `rating`, with deterministic submission-time ordering for ties. Unknown/invalid filters and reversed fee ranges return 400.
+Only an explicitly entered `monthlyFee` is used for price filtering; course/hourly/per-lesson fees are never converted. A zero fee is valid. Missing fees are `null`, excluded by any price bound and sorted last. The additional sort values are `price_asc`, `price_desc` and `rating` (see KAN-16 below for their ordering rules). Unknown/invalid filters and reversed fee ranges return 400.
 
 Schema v4 adds location, level, monthly fee, instruction languages and delivery modes to listings, plus `provider_rating_summaries`. Legacy rows retain unknown/empty values instead of invented defaults. All new fields are visible in representative submissions and admin review; they do not bypass publication checks. Optional API fields preserve compatibility with earlier clients; new UI submissions require subjects, a level and at least one language/mode.
 
 Ratings are provider-level aggregates of 1–5 star reviews. Search uses the unrounded average; unrated providers have `rating: null`, `reviewCount: 0` and do not satisfy a rating threshold. Every review accepted by `POST /api/providers/{id}/reviews` (MVP-09) updates `provider_rating_summaries` in the same transaction, so catalog ratings always equal the stored reviews. `store.recordRatingSummary(userId, {scoreTotal, reviewCount})` remains a trusted backend seam (used by tests and the demo) and has no HTTP write route. Representatives cannot set rating/approval fields through listing submission. Demo aggregates are synthetic, not real reviews.
 
 The design-aligned sidebar, mobile quick filters, removable filter chips, cards and public listing details display the same stored data. Use `npm run demo` to inspect both tickets together with authentication, verification and admin review. The search PR depends on #21; the filters PR depends on the search PR.
+
+## Listing management and profiles (KAN-11 / MVP-07, REQ-10 and REQ-12)
+
+Representatives describe each listing fully from the account page: title, description, subjects, level, languages and delivery modes (KAN-10/KAN-15), plus the public profile added here: `monthlyFee` and an optional `lessonFee` (whole UZS), a free-text `scheduleSummary` (up to 300 characters), a street `address` (up to 200 characters, shown with the city and district), and public contact details for direct leads: `contactPhone` (7–15 digits with an optional `+`; spaces, dashes and parentheses are stripped) and `contactTelegram` (a Telegram username; `@name`, `t.me/name` and `https://t.me/name` are all accepted and stored as the bare username). Every profile field is optional and defaults to empty or `null`; invalid values return 400 and nothing is stored.
+
+`POST /api/listings/update` takes `{ "id": "listing UUID", ...the same fields as /api/listings/submit }` and replaces the listing's content. Only the owner can edit (any other account receives 404, so listings cannot be enumerated), using the existing `listings:own` permission, Origin, JSON and 8 KiB checks. **Every edit returns the listing to `pending`**, clears the previous decision and note, records `updatedAt`, and removes a published listing from `/api/catalog` until an admin approves the new version. Students therefore never see content an admin has not reviewed. Rejected listings are edited and resubmitted the same way; the review note stays visible until the resubmission. Edits do not change the listing's position in the admin queue.
+
+The account page shows each listing's profile, an **Edit listing** form prefilled with the stored values, and the last edit date. Admin review cards display the same profile fields. Public catalog responses and `/listing?id=` include the pricing, schedule, address and contact fields, because they exist to be shown to students; verification contact details and evidence remain private. The legacy `/api/listings` feed is unchanged. Schema v5 adds the profile columns and `updated_at` to `listings`; migrated rows have empty profiles.
+
+## Direct lead actions (MVP-08 / REQ-11)
+
+Catalog cards on the home and search pages, the public listing page and the Bright Minds center profile show **Telegram** and **Call** buttons built from the listing's public contact details: `https://t.me/<username>` opens a chat (new tab, `rel="noopener noreferrer"`), and `tel:<number>` dials on phones with one tap. The buttons are plain links on public pages backed by public routes, so they work for signed-out visitors; nothing is logged or gated behind an account. A button is omitted when the representative left that contact empty, and the listing page says so.
+
+Only normalized values reach the page: phones are 7–15 digits with an optional `+`, and Telegram usernames match `^[A-Za-z][A-Za-z0-9_]{4,31}$`, so stored contact details cannot inject other URL schemes, paths or query strings. Contact details appear only for listings that pass the usual two-approval publication checks; pending, rejected or unverified listings never expose them. On phones the listing page repeats the actions in a sticky bottom bar, matching the design boards' contact bar.
+
+## Result sorting (KAN-16 / MVP-06, REQ-09)
+
+The **Sort** control on `/search` reorders the active (filtered) results through the `sort` parameter of `GET /api/catalog`: `price_asc` and `price_desc` order by the listed monthly fee, `rating` orders by the average star rating, highest first. Sorting applies to the whole filtered result set before pagination, so page boundaries are consistent and no listing appears twice or disappears between pages. `relevance` (default) and `newest` keep their submission-time ordering.
+
+Ties are deterministic: listings with the same fee or the same average are ordered by their listing UUID ascending, which never changes, so repeated requests and successive pages always agree. Listings without a monthly fee sort last under both fee orders, and providers without reviews sort last under `rating`; they are never ranked as 0 UZS or 0 stars. The rating is the arithmetic mean of the provider's 1–5 star reviews (MVP-09), read from `provider_rating_summaries`, which every accepted review updates in the same transaction, so a new review changes the order immediately and the catalog and `/api/providers/{id}/reviews` always agree. Repeated or unknown `sort` values return 400.
