@@ -6,11 +6,18 @@ import { openStore } from './store.js';
 import { credentials, hashPassword, verifyPassword } from './password.js';
 import { requirePermission } from './access.js';
 import { applicationInput, reviewInput, listingInput, ratingInput } from './verification.js';
+import { catalogQuery } from './catalog.js';
 
 const SESSION_SECONDS = 86_400;
 const files = new Map([
   ['/', ['home.html', 'text/html; charset=utf-8']],
   ['/search', ['search.html', 'text/html; charset=utf-8']],
+  ['/listing', ['listing.html', 'text/html; charset=utf-8']],
+  ['/catalog.js', ['catalog.js', 'text/javascript; charset=utf-8']],
+  ['/catalog-view.js', ['catalog-view.js', 'text/javascript; charset=utf-8']],
+  ['/catalog-options.js', ['catalog-options.js', 'text/javascript; charset=utf-8']],
+  ['/listing-fields.js', ['listing-fields.js', 'text/javascript; charset=utf-8']],
+  ['/catalog.css', ['catalog.css', 'text/css; charset=utf-8']],
   ['/centers/bright-minds', ['center.html', 'text/html; charset=utf-8']],
   ['/login', ['login.html', 'text/html; charset=utf-8']],
   ['/account', ['account.html', 'text/html; charset=utf-8']],
@@ -44,6 +51,8 @@ const apiRoutes = new Map([
   ['/api/admin/verification', { method: 'GET', permission: 'verification:review' }],
   ['/api/admin/verification/review', { method: 'POST', permission: 'verification:review' }],
   ['/api/listings', { method: 'GET', public: true }],
+  ['/api/catalog', { method: 'GET', public: true }],
+  ['/api/catalog/listing', { method: 'GET', public: true }],
   ['/api/listings/mine', { method: 'GET', permission: 'listings:own' }],
   ['/api/listings/submit', { method: 'POST', permission: 'listings:own' }],
   ['/api/admin/listings', { method: 'GET', permission: 'listings:review' }],
@@ -96,7 +105,8 @@ export async function createApp({ store, origin, secure = false, now = Date.now 
     res.setHeader('Content-Security-Policy', "default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; connect-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'");
     if (secure) res.setHeader('Strict-Transport-Security', 'max-age=31536000');
     try {
-      const path = new URL(req.url, origin).pathname;
+      const url = new URL(req.url, origin);
+      const path = url.pathname;
       if (req.method === 'GET' && assets.has(path)) {
         const { body, type } = assets.get(path);
         res.writeHead(200, { 'Content-Type': type });
@@ -133,6 +143,11 @@ export async function createApp({ store, origin, secure = false, now = Date.now 
         applications: store.pendingApplications(), accounts: { student: 0, representative: 0, admin: 0, ...store.userCounts() },
       });
       if (path === '/api/listings') return json(res, 200, { listings: store.publishedListings() });
+      if (path === '/api/catalog') return json(res, 200, store.searchListings(catalogQuery(url.searchParams)));
+      if (path === '/api/catalog/listing') {
+        const listing = store.publishedListing(url.searchParams.get('id') || '');
+        return listing ? json(res, 200, { listing }) : json(res, 404, { error: 'This listing is unavailable.' });
+      }
       if (path === '/api/listings/mine') return json(res, 200, { listings: store.listingsFor(sessionUser.id) });
       if (path === '/api/admin/listings') return json(res, 200, { listings: store.pendingListings() });
       if (route.workspace) {

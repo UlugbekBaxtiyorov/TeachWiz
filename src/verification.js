@@ -1,3 +1,5 @@
+import { preparationCategories, skillLevels, instructionLanguages, deliveryModes } from '../public/catalog-options.js';
+
 const fail = (message) => { throw Object.assign(new Error(message), { status: 400 }); };
 
 function fields(body, allowed) {
@@ -35,8 +37,36 @@ export function reviewInput(body) {
 }
 
 export function listingInput(body) {
-  fields(body, ['title', 'description']);
-  return { title: text(body.title, 'Listing title', 120), description: text(body.description, 'Description', 2000) };
+  fields(body, ['title', 'description', 'subjects', 'preparationCategories', 'city', 'district', 'skillLevel', 'monthlyFee', 'instructionLanguages', 'deliveryModes']);
+  const subjects = body.subjects ?? [];
+  const categories = body.preparationCategories ?? [];
+  if (!Array.isArray(subjects) || subjects.length > 12) fail('Supply up to 12 subjects.');
+  if (!Array.isArray(categories) || categories.length > 3
+      || categories.some((key) => typeof key !== 'string' || !Object.hasOwn(preparationCategories, key))) fail('Choose supported preparation categories.');
+  const uniqueSubjects = new Map(subjects.map((value) => {
+    const subject = text(value, 'Subject', 60);
+    return [subject.normalize('NFKC').toLowerCase(), subject];
+  }));
+  const choices = (value, options, label) => {
+    if (value === undefined) return [];
+    if (!Array.isArray(value) || value.length > Object.keys(options).length
+        || value.some((key) => typeof key !== 'string' || !Object.hasOwn(options, key))) fail(`Choose supported ${label}.`);
+    return [...new Set(value)];
+  };
+  const city = text(body.city, 'City', 80, false).normalize('NFKC').replace(/\s+/gu, ' ');
+  const district = text(body.district, 'District', 80, false).normalize('NFKC').replace(/\s+/gu, ' ');
+  if (district && !city) fail('Supply a city for the district.');
+  const skillLevel = body.skillLevel ?? '';
+  if (typeof skillLevel !== 'string' || (skillLevel && !Object.hasOwn(skillLevels, skillLevel))) fail('Choose a supported skill level.');
+  const monthlyFee = body.monthlyFee ?? null;
+  if (monthlyFee !== null && (!Number.isSafeInteger(monthlyFee) || monthlyFee < 0 || monthlyFee > 100000000)) fail('Monthly fee must be a whole UZS amount from 0 to 100000000, or null.');
+  return {
+    title: text(body.title, 'Listing title', 120), description: text(body.description, 'Description', 2000),
+    subjects: [...uniqueSubjects.values()], preparationCategories: [...new Set(categories)],
+    city, district, skillLevel, monthlyFee,
+    instructionLanguages: choices(body.instructionLanguages, instructionLanguages, 'instruction languages'),
+    deliveryModes: choices(body.deliveryModes, deliveryModes, 'delivery modes'),
+  };
 }
 
 export function ratingInput(body) {
