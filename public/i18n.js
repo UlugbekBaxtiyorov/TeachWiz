@@ -2,71 +2,133 @@
  * TeachWiz i18n — client-side localization module
  * MVP-12 / REQ-16
  *
- * Usage (in every HTML page):
- *   <script type="module" src="/i18n.js"></script>
- *
- * Usage (in page-specific JS modules):
- *   import { t } from '/i18n.js';
- *
- * Markup convention:
- *   <span data-i18n="key">Fallback text</span>
- *   <input data-i18n-placeholder="key" placeholder="Fallback">
- *   <button data-i18n="key">Fallback</button>
- *
- * Language choice is persisted in localStorage under 'teachwiz_lang'.
- * Defaults to 'en' if not set or if the stored value is invalid.
+ * Static UI is translated from the locale dictionaries. Existing
+ * data-i18n/data-i18n-placeholder attributes are supported, while exact
+ * English UI strings are also detected automatically so older pages do not
+ * need to be manually wrapped before the switcher works.
  */
 
 const SUPPORTED = ['uz', 'ru', 'en'];
 const STORAGE_KEY = 'teachwiz_lang';
 const LANG_HTML_MAP = { uz: 'uz', ru: 'ru', en: 'en' };
+const AUTO_KEY_ATTR = 'data-i18n-auto-key';
+const AUTO_PLACEHOLDER_ATTR = 'data-i18n-auto-placeholder-key';
+const AUTO_LABEL_ATTR = 'data-i18n-auto-label-key';
+const EXCLUDED_TAGS = new Set(['SCRIPT', 'STYLE', 'NOSCRIPT', 'TEXTAREA']);
 
 let currentLang = 'en';
 let currentDict = {};
+let englishDict = {};
+let englishValueToKey = new Map();
 
-/** Translate a key, returning the key itself if not found. */
 export function t(key) {
-  return currentDict[key] ?? key;
+  return currentDict[key] ?? englishDict[key] ?? key;
 }
 
-/** Apply a locale dictionary to the current DOM. */
+function rememberEnglishKey(el, attr, value) {
+  if (el.getAttribute(attr)) return el.getAttribute(attr);
+  const key = englishValueToKey.get(value.trim());
+  if (key) el.setAttribute(attr, key);
+  return key || '';
+}
+
+function shouldSkipTextNode(node) {
+  const parent = node.parentElement;
+  if (!parent || EXCLUDED_TAGS.has(parent.tagName)) return true;
+  if (parent.closest('.lang, [data-no-i18n], #review-list')) return true;
+  return !node.nodeValue.trim();
+}
+
+function translateTextNodes(root, dict) {
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  const nodes = [];
+  while (walker.nextNode()) nodes.push(walker.currentNode);
+
+  for (const node of nodes) {
+    if (shouldSkipTextNode(node)) continue;
+    const parent = node.parentElement;
+    const original = node.nodeValue;
+    const trimmed = original.trim();
+    let key = parent.getAttribute(AUTO_KEY_ATTR);
+
+    if (!key) {
+      key = englishValueToKey.get(trimmed) || '';
+      if (key) parent.setAttribute(AUTO_KEY_ATTR, key);
+    }
+
+    if (!key || !Object.prototype.hasOwnProperty.call(dict, key)) continue;
+    const translated = dict[key];
+    const start = original.indexOf(trimmed);
+    const end = start + trimmed.length;
+    node.nodeValue = `${original.slice(0, start)}${translated}${original.slice(end)}`;
+  }
+}
+
+function translateAttributes(root, dict) {
+  const elements = root.querySelectorAll
+    ? root.querySelectorAll('[data-i18n-placeholder], [placeholder], [aria-label], [title]')
+    : [];
+
+  for (const el of elements) {
+    if (el.matches('[data-i18n-placeholder]')) {
+      const key = el.getAttribute('data-i18n-placeholder');
+      if (dict[key]) el.placeholder = dict[key];
+    } else if (el.hasAttribute('placeholder')) {
+      const value = el.getAttribute('placeholder');
+      const key = el.getAttribute(AUTO_PLACEHOLDER_ATTR) || englishValueToKey.get(value.trim());
+      if (key) {
+        el.setAttribute(AUTO_PLACEHOLDER_ATTR, key);
+        if (dict[key]) el.placeholder = dict[key];
+      }
+    }
+
+    if (el.hasAttribute('aria-label') && !el.closest('.lang')) {
+      const value = el.getAttribute('aria-label');
+      const key = el.getAttribute(AUTO_LABEL_ATTR) || englishValueToKey.get(value.trim());
+      if (key) {
+        el.setAttribute(AUTO_LABEL_ATTR, key);
+        if (dict[key]) el.setAttribute('aria-label', dict[key]);
+      }
+    }
+
+    if (el.hasAttribute('title')) {
+      const value = el.getAttribute('title');
+      const key = el.getAttribute('data-i18n-auto-title-key') || englishValueToKey.get(value.trim());
+      if (key) {
+        el.setAttribute('data-i18n-auto-title-key', key);
+        if (dict[key]) el.setAttribute('title', dict[key]);
+      }
+    }
+  }
+}
+
 export function applyLocale(lang, dict) {
   currentLang = lang;
   currentDict = dict;
-
-  // Update <html lang="">
   document.documentElement.lang = LANG_HTML_MAP[lang] || lang;
 
-  // Translate all text-content nodes
   for (const el of document.querySelectorAll('[data-i18n]')) {
     const key = el.getAttribute('data-i18n');
-    if (Object.prototype.hasOwnProperty.call(dict, key)) {
-      el.textContent = dict[key];
-    }
+    if (Object.prototype.hasOwnProperty.call(dict, key)) el.textContent = dict[key];
   }
 
-  // Translate placeholder attributes
-  for (const el of document.querySelectorAll('[data-i18n-placeholder]')) {
-    const key = el.getAttribute('data-i18n-placeholder');
-    if (Object.prototype.hasOwnProperty.call(dict, key)) {
-      el.placeholder = dict[key];
-    }
-  }
+  translateTextNodes(document.body, dict);
+  translateAttributes(document, dict);
 
-  // Update aria-pressed on lang buttons
   const langGroup = document.querySelector('.lang[role="group"]');
   if (langGroup) {
-    const buttons = langGroup.querySelectorAll('button[type="button"]');
-    for (const btn of buttons) {
-      btn.setAttribute('aria-pressed', String(btn.textContent.trim().toLowerCase() === lang));
+    for (const btn of langGroup.querySelectorAll('button[type="button"]')) {
+      const label = (btn.dataset.lang || btn.textContent).trim().toLowerCase();
+      if (SUPPORTED.includes(label)) btn.setAttribute('aria-pressed', String(label === lang));
     }
   }
+
+  document.dispatchEvent(new CustomEvent('teachwiz:languagechange', { detail: { lang } }));
 }
 
-/** Fetch a locale dict; returns null on network/parse error. */
 async function fetchDict(lang) {
   try {
-    const res = await fetch(`/locales/${lang}.json`);
+    const res = await fetch(`/locales/${lang}.json`, { cache: 'no-store' });
     if (!res.ok) return null;
     return await res.json();
   } catch {
@@ -74,43 +136,59 @@ async function fetchDict(lang) {
   }
 }
 
-/** Wire up the language switcher buttons in the header. */
-function attachLangButtons(currentLang) {
+function attachLangButtons() {
   const langGroup = document.querySelector('.lang[role="group"]');
-  if (!langGroup) return;
+  if (!langGroup || langGroup.dataset.i18nBound === 'true') return;
+  langGroup.dataset.i18nBound = 'true';
 
-  for (const btn of langGroup.querySelectorAll('button[type="button"]')) {
-    const label = btn.textContent.trim().toLowerCase();
-    if (!SUPPORTED.includes(label)) continue;
-    btn.setAttribute('aria-pressed', String(label === currentLang));
-    btn.addEventListener('click', async () => {
-      if (label === currentLang) return;
-      const dict = await fetchDict(label);
-      if (!dict) return; // fail silently — keep current language
-      localStorage.setItem(STORAGE_KEY, label);
-      applyLocale(label, dict);
-      attachLangButtons(label); // re-wire so `currentLang` closure updates
-    });
-  }
+  langGroup.addEventListener('click', async (event) => {
+    const btn = event.target.closest('button[type="button"]');
+    if (!btn || !langGroup.contains(btn)) return;
+    const lang = (btn.dataset.lang || btn.textContent).trim().toLowerCase();
+    if (!SUPPORTED.includes(lang) || lang === currentLang) return;
+
+    btn.disabled = true;
+    const dict = await fetchDict(lang);
+    btn.disabled = false;
+    if (!dict) return;
+
+    localStorage.setItem(STORAGE_KEY, lang);
+    applyLocale(lang, dict);
+  });
 }
 
-/**
- * Initialize i18n: read stored preference, fetch dict, apply to DOM.
- * Call this once per page (the module calls it automatically when loaded
- * as a plain script tag, or you can await it in another module).
- */
+function observeDynamicUi() {
+  const observer = new MutationObserver((mutations) => {
+    for (const mutation of mutations) {
+      for (const node of mutation.addedNodes) {
+        if (node.nodeType === Node.ELEMENT_NODE) {
+          translateTextNodes(node, currentDict);
+          translateAttributes(node, currentDict);
+        } else if (node.nodeType === Node.TEXT_NODE && node.parentElement) {
+          translateTextNodes(node.parentElement, currentDict);
+        }
+      }
+    }
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
+}
+
 export async function initI18n() {
   const stored = localStorage.getItem(STORAGE_KEY);
   const lang = SUPPORTED.includes(stored) ? stored : 'en';
 
-  const dict = await fetchDict(lang);
-  if (dict) {
-    applyLocale(lang, dict);
-  }
+  englishDict = await fetchDict('en') || {};
+  englishValueToKey = new Map(
+    Object.entries(englishDict)
+      .filter(([, value]) => typeof value === 'string' && value.trim())
+      .map(([key, value]) => [value.trim(), key]),
+  );
 
-  attachLangButtons(lang);
+  const dict = lang === 'en' ? englishDict : await fetchDict(lang);
+  if (dict) applyLocale(lang, dict);
+
+  attachLangButtons();
+  observeDynamicUi();
 }
 
-// Auto-init when this module is loaded as a <script type="module"> tag.
-// When imported by another module, the caller can await initI18n() itself.
 await initI18n();
