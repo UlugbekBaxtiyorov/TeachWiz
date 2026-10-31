@@ -198,6 +198,7 @@
   "flow_application_note": "Your account is still Student. Representative access starts only after admin approval.",
   "flow_role_student_hint": "Find a tutor or center",
   "flow_role_provider_hint": "Manage your teaching profile",
+  "flow_role_provider_label": "Provider",
   "flow_role_admin_hint": "Review applications and listings",
   "flow_account_signin_hint": "Open your student, representative or administrator dashboard.",
   "flow_learning_start": "Your learning starts here",
