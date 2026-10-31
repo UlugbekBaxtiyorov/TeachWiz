@@ -198,6 +198,7 @@
   "flow_application_note": "Akkauntingiz hali o‘quvchi rolida. Vakil huquqlari faqat administrator tasdiqlagach beriladi.",
   "flow_role_student_hint": "Repetitor yoki markazni topish",
   "flow_role_provider_hint": "O‘qituvchi profilingizni boshqarish",
+  "flow_role_provider_label": "Vakil",
   "flow_role_admin_hint": "Arizalar va e’lonlarni tekshirish",
   "flow_account_signin_hint": "O‘quvchi, vakil yoki administrator kabinetingizni oching.",
   "flow_learning_start": "Ta’limingiz shu yerdan boshlanadi",
