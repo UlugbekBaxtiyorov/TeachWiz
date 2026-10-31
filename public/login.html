@@ -16,12 +16,17 @@
       <div class="lang" role="group" aria-label="Language"><button type="button" aria-pressed="false">UZ</button><button type="button" aria-pressed="false">RU</button><button type="button" aria-pressed="true">EN</button></div>
     </div>
   </header>
-  <main class="narrow-page">
+  <main class="narrow-page auth-page">
+    <nav class="login-roles" aria-label="Choose your sign-in page">
+      <a href="/login/student" data-login-role="student"><strong>Student</strong><span>Find a tutor or center</span></a>
+      <a href="/login/representative" data-login-role="representative"><strong>Representative</strong><span>Manage your teaching profile</span></a>
+      <a href="/login/admin" data-login-role="admin"><strong>Admin</strong><span>Review applications and listings</span></a>
+    </nav>
     <section class="panel form-panel" aria-label="TeachWiz account">
       <div id="auth-panel">
-        <h1 id="form-title">Welcome back.</h1>
-        <p class="muted" id="form-subtitle">Sign in and pick up where you left off.</p>
-        <div class="segmented" aria-label="Account action">
+        <h1 id="form-title" data-no-i18n>Student sign in</h1>
+        <p class="muted" id="form-subtitle" data-no-i18n>Find tutors and learning centers, and share your experience.</p>
+        <div class="segmented" id="auth-modes" aria-label="Account action">
           <button id="login-mode" type="button" aria-pressed="true">Sign in</button>
           <button id="signup-mode" type="button" aria-pressed="false">Create account</button>
         </div>
@@ -29,16 +34,18 @@
           <label class="field" for="email">Email address<input id="email" name="email" type="email" autocomplete="username" placeholder="you@example.com" maxlength="254" required></label>
           <label class="field" for="password">Password<input id="password" name="password" type="password" autocomplete="current-password" minlength="8" maxlength="256" aria-describedby="password-hint" required></label>
           <p class="hint" id="password-hint">Use 8–128 characters. Spaces are welcome.</p>
-          <button class="btn btn-primary" id="submit" type="submit">Sign in</button>
+          <button class="btn btn-primary" id="submit" type="submit" data-no-i18n>Sign in</button>
         </form>
+        <p class="hint" id="access-note" data-no-i18n></p>
       </div>
       <div id="session-panel" class="stack" hidden>
-        <h1 tabindex="-1" id="session-title">You’re signed in.</h1>
-        <dl class="details"><dt>Email</dt><dd id="account-email"></dd><dt>Account</dt><dd id="account-role"></dd></dl>
-        <a class="btn btn-primary" href="/account">Go to your account</a>
+        <h1 tabindex="-1" id="session-title" data-no-i18n>You’re signed in.</h1>
+        <dl class="details"><dt>Email</dt><dd id="account-email" data-no-i18n></dd><dt>Account</dt><dd id="account-role" data-no-i18n></dd></dl>
+        <p class="muted" id="session-note" data-no-i18n></p>
+        <a class="btn btn-primary" id="account-link" href="/account" data-no-i18n>Go to your account</a>
         <button class="btn" id="logout" type="button">Sign out</button>
       </div>
-      <p class="status" id="status" role="status" aria-live="polite"></p>
+      <p class="status" id="status" role="status" aria-live="polite" data-no-i18n></p>
       <noscript>Please enable JavaScript to sign in or create an account.</noscript>
     </section>
   </main>

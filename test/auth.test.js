@@ -202,6 +202,9 @@ test('serves the UI pages, sign-in and account pages, and self-hosted font', asy
     ['/search', 'text/html', 'catalog-results'],
     ['/centers/bright-minds', 'text/html', 'Bright Minds Center'],
     ['/login', 'text/html', 'id="auth-form"'],
+    ['/login/student', 'text/html', 'data-login-role="student"'],
+    ['/login/representative', 'text/html', 'data-login-role="representative"'],
+    ['/login/admin', 'text/html', 'data-login-role="admin"'],
     ['/account', 'text/html', 'src="/account.js"'],
     ['/saved', 'text/html', 'No saved centers yet'],
     ['/for-centers', 'text/html', 'Get found by students near you'],
@@ -214,5 +217,23 @@ test('serves the UI pages, sign-in and account pages, and self-hosted font', asy
     assert.ok(response.headers.get('content-type').startsWith(type), path);
     assert.ok((await response.text()).includes(text), path);
     assert.match(response.headers.get('content-security-policy'), /font-src 'self'/);
+  }
+});
+
+test('sign-in entry points do not grant roles and new accounts stay students until approval', async (t) => {
+  const f = await fixture(t);
+  for (const role of ['student', 'representative', 'admin']) {
+    const page = await fetch(`${f.base}/login/${role}#signup`);
+    assert.equal(page.status, 200);
+    assert.equal(page.headers.get('set-cookie'), null);
+    const signup = await f.post('signup', account(`${role}-entry@example.test`), '', { Referer: `${origin}/login/${role}` });
+    assert.equal(signup.status, 201);
+    assert.equal((await signup.json()).user.role, 'student');
+    const cookie = cookieFrom(signup);
+    const read = (path) => fetch(`${f.base}${path}`, { headers: { Cookie: cookie } });
+    assert.equal((await read('/api/workspaces/student')).status, 200);
+    assert.equal((await read('/api/workspaces/representative')).status, 403);
+    assert.equal((await read('/api/workspaces/admin')).status, 403);
+    assert.deepEqual((await (await read('/api/verification')).json()).applications, []);
   }
 });

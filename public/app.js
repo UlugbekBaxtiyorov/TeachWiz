@@ -1,6 +1,24 @@
+import { t } from './i18n.js';
+
 const byId = (id) => document.getElementById(id);
+function setCopy(id, key) {
+  byId(id).dataset.i18n = key;
+  byId(id).textContent = t(key);
+}
 const form = byId('auth-form');
 const status = byId('status');
+const loginRole = ({ '/login/representative': 'representative', '/login/admin': 'admin' })[location.pathname] || 'student';
+const pages = {
+  student: { title: 'flow_student_login', signup: 'flow_student_signup', description: 'flow_student_description', note: 'flow_student_note' },
+  representative: { title: 'flow_representative_login', signup: 'flow_representative_signup', description: 'flow_representative_description', note: 'flow_representative_note' },
+  admin: { title: 'flow_admin_login', description: 'flow_admin_description', note: 'flow_admin_note' },
+};
+const page = pages[loginRole];
+byId('auth-modes').hidden = loginRole === 'admin';
+setCopy('access-note', page.note);
+for (const link of document.querySelectorAll('[data-login-role]')) {
+  if (link.dataset.loginRole === loginRole) link.setAttribute('aria-current', 'page');
+}
 let mode = 'login';
 let busy = false;
 
@@ -10,28 +28,35 @@ function setBusy(value) {
   form.setAttribute('aria-busy', String(value));
 }
 
-function showUser(user, focus = false) {
+function showUser(user, focus = false, created = false) {
   byId('auth-panel').hidden = Boolean(user);
   byId('session-panel').hidden = !user;
   byId('password').value = '';
   if (user) {
     byId('account-email').textContent = user.email;
-    byId('account-role').textContent = { student: 'Student', representative: 'Representative', admin: 'Platform admin' }[user.role] || 'Account';
+    setCopy('account-role', `account_${user.role}_label`);
+    const applying = user.role === 'student' && loginRole === 'representative';
+    setCopy('session-title', created ? 'flow_account_created' : 'login_signed_in_title');
+    setCopy('session-note', applying ? 'flow_applicant_session' : 'flow_existing_session');
+    byId('account-link').href = applying ? '/account?view=verification' : '/account';
+    setCopy('account-link', applying ? 'flow_continue_application' : `flow_open_${user.role}`);
     if (focus) byId('session-title').focus();
   } else if (focus) byId('email').focus();
 }
 
 function setMode(next) {
   if (busy) return;
-  mode = next;
+  mode = loginRole === 'admin' ? 'login' : next;
   const signup = mode === 'signup';
   byId('login-mode').setAttribute('aria-pressed', String(!signup));
   byId('signup-mode').setAttribute('aria-pressed', String(signup));
-  byId('form-title').textContent = signup ? 'Start your chapter.' : 'Welcome back.';
-  byId('form-subtitle').textContent = signup ? 'Create your student account and take the first step.' : 'Sign in and pick up where you left off.';
+  setCopy('form-title', signup ? page.signup : page.title);
+  setCopy('form-subtitle', signup ? page.note : page.description);
+  byId('access-note').hidden = signup;
+  document.title = `${t(signup ? page.signup : page.title)} — TeachWiz`;
   byId('password').autocomplete = signup ? 'new-password' : 'current-password';
   byId('password').value = '';
-  byId('submit').firstChild.textContent = signup ? 'Create account ' : 'Sign in ';
+  setCopy('submit', signup ? 'btn_create_account' : 'login_btn_signin');
   status.textContent = '';
 }
 
@@ -61,8 +86,8 @@ form.addEventListener('submit', async (event) => {
   status.textContent = mode === 'signup' ? 'Creating your account…' : 'Signing you in…';
   try {
     const result = await request(mode, { email: byId('email').value, password });
-    showUser(result.user, true);
-    status.textContent = 'You’re signed in.';
+    showUser(result.user, true, mode === 'signup');
+    status.textContent = mode === 'signup' ? 'Student account created.' : 'You’re signed in.';
   } catch (error) {
     byId('password').value = '';
     status.textContent = error instanceof TypeError ? 'Could not connect. Please try again.' : error.message;
@@ -92,5 +117,9 @@ async function restoreSession() {
   } finally { setBusy(false); }
 }
 
-if (location.hash === '#signup') setMode('signup');
+setMode(location.hash === '#signup' ? 'signup' : 'login');
+window.addEventListener('hashchange', () => setMode(location.hash === '#signup' ? 'signup' : 'login'));
+document.addEventListener('teachwiz:languagechange', () => {
+  document.title = `${t(mode === 'signup' ? page.signup : page.title)} — TeachWiz`;
+});
 await restoreSession();
