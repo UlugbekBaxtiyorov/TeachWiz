@@ -18,35 +18,49 @@
     </div>
   </header>
   <main class="account-page">
-    <div class="account-heading"><div><p class="eyebrow">Your Teachwiz</p><h1 class="page-title">Account</h1></div><a class="back-link" href="/search">Browse tutors &amp; centers <span aria-hidden="true">↗</span></a></div>
+    <div class="account-heading"><div><p class="eyebrow">Your Teachwiz</p><h1 class="page-title" id="account-title" data-no-i18n>Account</h1></div><a class="back-link" href="/search">Browse tutors &amp; centers <span aria-hidden="true">↗</span></a></div>
     <section class="panel stack" id="signed-out" hidden>
       <h2>Sign in to see your account</h2>
-      <p class="muted">Keep track of the centers you contact and pick up where you left off.</p>
-      <a class="btn btn-primary" href="/login">Log in</a>
-      <a class="btn" href="/login#signup">Create account</a>
+      <p class="muted">Open your student, representative or administrator dashboard.</p>
+      <a class="btn btn-primary" id="account-login" href="/login/student">Log in</a>
+      <a class="btn" id="account-signup" href="/login/student#signup">Create account</a>
     </section>
     <div class="account-layout" id="signed-in" hidden>
       <aside class="account-sidebar">
         <section class="panel account-details" aria-labelledby="details-title">
           <span class="account-avatar" id="account-avatar" aria-hidden="true">T</span>
           <h2 id="details-title">Your details</h2>
-          <dl class="details"><dt>Email</dt><dd id="account-email"></dd><dt>Account type</dt><dd id="account-role"></dd></dl>
+          <dl class="details"><dt>Email</dt><dd id="account-email" data-no-i18n></dd><dt>Account type</dt><dd id="account-role" data-no-i18n></dd></dl>
           <button class="btn" id="logout" type="button">Sign out</button>
         </section>
-        <nav class="panel link-list" aria-label="Account shortcuts">
-          <a href="/account" aria-current="page">Verification &amp; listings <span aria-hidden="true">›</span></a>
-          <a href="/saved">Saved centers <span aria-hidden="true">›</span></a>
-          <a href="/for-centers">For tutors &amp; centers <span aria-hidden="true">›</span></a>
-        </nav>
+        <nav class="panel link-list" id="account-shortcuts" aria-label="Account shortcuts"></nav>
       </aside>
       <section class="account-workspace" id="workspace-panel" aria-labelledby="workspace-title" hidden>
-        <div class="workspace-heading"><div><h2 id="workspace-title" tabindex="-1"></h2><p class="muted" id="workspace-description"></p></div><button class="btn" id="workspace-open" type="button">Refresh status</button></div>
-        <p class="status workspace-status" id="status" role="status" aria-live="polite" tabindex="-1"></p>
+        <div class="workspace-heading"><div><h2 id="workspace-title" tabindex="-1" data-no-i18n></h2><p class="muted" id="workspace-description" data-no-i18n></p></div><button class="btn" id="workspace-open" type="button">Refresh status</button></div>
+        <p class="status workspace-status" id="status" role="status" aria-live="polite" tabindex="-1" data-no-i18n></p>
         <dl class="account-counts" id="workspace-counts" hidden></dl>
+        <div class="student-home" id="student-home" hidden>
+          <section class="panel student-welcome">
+            <p class="eyebrow">Your learning starts here</p>
+            <h3>Find your next tutor or learning center</h3>
+            <p>Browse verified listings, compare prices and schedules, and contact providers directly.</p>
+            <a class="btn btn-primary" href="/search">Explore tutors &amp; centers</a>
+          </section>
+          <section class="panel stack">
+            <h3>Share your experience</h3>
+            <p class="muted">As a student, you can leave a rating and review on a center profile that offers reviews.</p>
+            <a class="back-link" href="/centers/bright-minds">View a center profile →</a>
+          </section>
+          <section class="panel stack">
+            <h3>Want to teach on TeachWiz?</h3>
+            <p class="muted">Teaching is optional. Your account stays a student account until an administrator approves your representative application.</p>
+            <a class="btn" href="/account?view=verification">Apply to teach / view application</a>
+          </section>
+        </div>
         <div id="verification-panel"></div>
       </section>
     </div>
-    <p class="status" id="session-status" role="status" aria-live="polite"></p>
+    <p class="status" id="session-status" role="status" aria-live="polite" data-no-i18n></p>
   </main>
   <nav class="tabbar" aria-label="App"><a href="/">Browse</a><a href="/search">Map</a><a href="/saved">Saved</a><a href="/account" aria-current="page">Account</a></nav>
 </body>

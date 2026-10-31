@@ -49,6 +49,10 @@ Emails are trimmed and treated case-insensitively. Passwords are preserved exact
 
 ## Role-based access
 
+The sign-in page offers separate entry points: `/login/student`, `/login/representative`, and `/login/admin`. `/login` defaults to the student entry point. These pages share authentication; the server's stored role always determines access. The admin entry point offers sign-in only. Selecting an entry point never grants a role, and an existing session is shown with its actual account type until the user signs out.
+
+New accounts always start as students and open a student dashboard with browsing and review links. Teaching is optional: **Apply to teach / view application** opens `/account?view=verification`. The representative signup entry point leads to that same application flow and explains that approval is required. Representative and admin accounts see their own listing-management and moderation dashboards. A student's pending/rejected application does not change their role.
+
 The server checks every protected API request against the current session and database role. Guests have no account or database role. Public registration always creates a student; admin accounts are provisioned by the CLI. Only an admin's approval of a verification application grants representative access; there is no self-service role-changing endpoint.
 
 | API | Guest | Student | Representative | Admin |
@@ -67,7 +71,7 @@ When adding an API, declare its method and permission in `apiRoutes` in `src/ser
 
 ## Representative verification and publication
 
-Sign in and go to **/account**. The verification workspace opens automatically. Students and existing representatives can apply as a **tutor** or **learning center**, supplying a provider name, contact details and supporting information. The administrator uses their own workspace to review the submitted details and independently check the evidence. There is no automatic identity or email verification, and the application does not download submitted URLs or accept identity-document uploads.
+Sign in and go to **/account**. Students choose **Apply to teach / view application** to open verification; existing representatives see verification and listings automatically. Applicants can apply as a **tutor** or **learning center**, supplying a provider name, contact details and supporting information. The administrator uses their own workspace to review the submitted details and independently check the evidence. There is no automatic identity or email verification, and the application does not download submitted URLs or accept identity-document uploads.
 
 The account UI uses the responsive design boards’ Manrope typography, green/cream palette, rounded cards and mobile navigation. It shows application progress, submitted details, review notes, resubmission and application history. Admins see separate representative and listing queues, with listing approval disabled until verification. The boards do not include a dedicated verification screen; this flow extends their existing visual language.
 

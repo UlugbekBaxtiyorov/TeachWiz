@@ -1,13 +1,22 @@
 import { clearWorkflows, loadWorkflows } from './verification.js';
+import { t } from './i18n.js';
 
 const byId = (id) => document.getElementById(id);
 const status = byId('session-status');
-const roles = { student: 'Student', representative: 'Representative', admin: 'Platform admin' };
+function setCopy(id, key) {
+  byId(id).dataset.i18n = key;
+  byId(id).textContent = t(key);
+}
 const workspaces = new Map([
-  ['student', { title: 'Representative verification', description: 'Help students find a tutor or learning center they can trust.' }],
-  ['representative', { title: 'Representative verification', description: 'Manage your verification and listing submissions.' }],
-  ['admin', { title: 'Review applications', description: 'Verify representatives and review listings before they go live.' }],
+  ['student', { title: 'flow_student_dashboard', description: 'flow_student_dashboard_description' }],
+  ['representative', { title: 'flow_representative_dashboard', description: 'flow_representative_dashboard_description' }],
+  ['admin', { title: 'flow_admin_dashboard', description: 'flow_admin_dashboard_description' }],
 ]);
+const teachingView = new URLSearchParams(location.search).get('view') === 'verification';
+if (teachingView) {
+  byId('account-login').href = '/login/representative';
+  byId('account-signup').href = '/login/representative#signup';
+}
 let currentUser = null;
 let busy = false;
 
@@ -22,6 +31,7 @@ function setBusy(value) {
 function showUser(user) {
   currentUser = user;
   clearWorkflows();
+  byId('student-home').hidden = true;
   byId('workspace-panel').hidden = true;
   byId('workspace-title').textContent = '';
   byId('workspace-description').textContent = '';
@@ -31,7 +41,19 @@ function showUser(user) {
   byId('signed-in').hidden = !user;
   byId('signed-out').hidden = Boolean(user);
   byId('account-email').textContent = user?.email || '';
-  byId('account-role').textContent = user ? roles[user.role] || 'Account' : '';
+  setCopy('account-role', user ? `account_${user.role}_label` : 'account_title');
+  setCopy('account-title', user ? `flow_${user.role}_account` : 'account_title');
+  document.title = `${byId('account-title').textContent} — TeachWiz`;
+  const links = user?.role === 'admin' ? [['flow_review_queue', '/account']]
+    : user?.role === 'representative' ? [['account_verification_link', '/account'], ['flow_browse_catalog', '/search']]
+    : [['flow_student_dashboard', '/account'], ['flow_find_providers', '/search'], ['flow_teaching_application', '/account?view=verification']];
+  byId('account-shortcuts').replaceChildren();
+  for (const [label, href] of links) {
+    const link = document.createElement('a');
+    link.dataset.i18n = label; link.dataset.noI18n = ''; link.textContent = t(label); link.href = href;
+    if (href === `/account${user?.role === 'student' && teachingView ? '?view=verification' : ''}`) link.setAttribute('aria-current', 'page');
+    byId('account-shortcuts').append(link);
+  }
   byId('account-avatar').textContent = user?.email?.[0]?.toUpperCase() || 'T';
   byId('status').textContent = '';
 }
@@ -59,11 +81,12 @@ async function openWorkspace() {
   const role = currentUser.role;
   setBusy(true);
   byId('workspace-panel').hidden = false;
-  byId('workspace-title').textContent = workspaces.get(role).title;
-  byId('workspace-description').textContent = workspaces.get(role).description;
+  setCopy('workspace-title', workspaces.get(role).title);
+  setCopy('workspace-description', workspaces.get(role).description);
   clearWorkflows();
+  byId('student-home').hidden = true;
   byId('workspace-counts').replaceChildren();
-  byId('status').textContent = 'Loading your verification status…';
+  byId('status').textContent = 'Loading your dashboard…';
   try {
     const response = await fetch(`/api/workspaces/${encodeURIComponent(role)}`, { credentials: 'same-origin' });
     if (response.status === 401) {
@@ -79,11 +102,25 @@ async function openWorkspace() {
     }
     if (!response.ok) throw new Error('Workspace request failed.');
     const result = await response.json();
+    if (result.user.role !== currentUser?.role) {
+      showUser(result.user);
+    }
     const details = workspaces.get(result.workspace);
     if (!details) throw new Error('Unknown workspace.');
-    byId('workspace-title').textContent = details.title;
-    byId('workspace-description').textContent = details.description;
+    setCopy('workspace-title', details.title);
+    setCopy('workspace-description', details.description);
     showCounts(result.accounts);
+    if (result.workspace === 'student' && !teachingView) {
+      byId('student-home').hidden = false;
+      byId('workspace-panel').hidden = false;
+      byId('status').textContent = '';
+      status.textContent = '';
+      return;
+    }
+    if (result.workspace === 'student') {
+      setCopy('workspace-title', 'flow_your_application');
+      setCopy('workspace-description', 'flow_application_note');
+    }
     await loadWorkflows(result.workspace, {
       setBusy,
       showCounts,
@@ -99,7 +136,7 @@ async function openWorkspace() {
     byId('status').textContent = '';
     status.textContent = '';
   } catch {
-    byId('status').textContent = 'Could not load your verification status. Select Refresh status to try again.';
+    byId('status').textContent = 'Could not load your dashboard. Select Refresh status to try again.';
   } finally { setBusy(false); }
 }
 
@@ -134,5 +171,8 @@ function showCounts(accounts) {
   byId('workspace-counts').hidden = !accounts;
 }
 
+document.addEventListener('teachwiz:languagechange', () => {
+  document.title = `${byId('account-title').textContent} — TeachWiz`;
+});
 await restoreSession();
 if (currentUser) await openWorkspace();
